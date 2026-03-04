@@ -28,6 +28,12 @@ int sys_ni_syscall()
 	return -38; /*ENOSYS*/
 }
 
+extern int zeos_ticks;
+int sys_gettime()
+{
+  return zeos_ticks;
+}
+
 int sys_write(int fd, char * buffer, int size) {
   int ch_fd = check_fd(fd, ESCRIPTURA);
   if (ch_fd != 0) return ch_fd;

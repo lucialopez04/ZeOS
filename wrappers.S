@@ -27,3 +27,23 @@ write_fin:
     movl %ebp, %esp
     popl %ebp
     ret
+
+ENTRY(gettime)
+    mov $10, %eax
+    pushl $return_address1
+    pushl %ebp
+    mov %esp, %ebp
+    sysenter
+
+return_address1:
+    cmpl $0, %eax
+    jge write_fin1
+    neg %eax
+    movl %eax, errno 
+    movl $-1, %eax 
+
+write_fin1:
+    movl %ebp, %esp
+    popl %ebp
+    ret
+
