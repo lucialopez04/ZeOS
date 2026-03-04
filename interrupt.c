@@ -42,7 +42,7 @@ void keyboard_routine() {
       else printc_xy(78,24,'C');
     }
 }
-extern int zeos_ticks;
+int zeos_ticks = 0;
 void clock_routine() {
   ++zeos_ticks;
   zeos_show_clock();
