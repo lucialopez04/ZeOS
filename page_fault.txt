@@ -1,0 +1,21 @@
+PILA DE SISTEMA:
+| ebp  |
+| @ret |
+|error |
+| eip  |
+|  cs  |
+| psw  |
+| esp  |
+|  ss  |
+--------
+
+void pf_routine(unsigned long error, unsigned long eip) {
+    PUSH ebp
+    EBP <- ESP
+}
+
+pf_handler:
+SAVE_ALL
+call pf_routine
+RESTORE_ALL
+iret
