@@ -125,8 +125,9 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
 	
 	}
 void pagefault_routine(unsigned long eip){
-	int pagina = hexa_to_int(eip);  
-char *buff;
+	int pagina = hexa_to_int(eip);
+	printk("Process generates a PAGE FAULT exception at EIP (in decima");
+	char *buff;
 	itoa(pagina, buff);
 	printk(buff);
   while(1);
