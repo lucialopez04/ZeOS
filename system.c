@@ -69,9 +69,7 @@ int __attribute__((__section__(".text.main")))
   printk("Entering user mode...");
 
   enable_int();  
-  writeMSR(0x174, (uint64_t)__KERNEL_CS);
-  writeMSR(0x175, (uint64_t)INITIAL_ESP);
-  writeMSR(0x176, (uint64_t)(uint32_t)syscall_handler_sysenter);
+  
 
 
   /*

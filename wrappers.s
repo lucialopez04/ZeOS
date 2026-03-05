@@ -10,11 +10,10 @@
 .extern errno
 
 .globl write; .type write, @function; .align 0; write:
-    mov 4(%esp), %edx
-    mov 8(%esp), %ecx
-    mov 12(%esp), %ebx
-
-    mov $4, %eax
+    movl 4(%esp), %edx
+    movl 8(%esp), %ecx
+    movl 12(%esp), %ebx
+    movl $4, %eax
     pushl $return_address
     pushl %ebp
     mov %esp, %ebp

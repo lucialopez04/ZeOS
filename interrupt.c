@@ -100,7 +100,7 @@ void pagefault_routine(unsigned long eip){
 
 }
 
-
+void syscall_handler_sysenter();
 void setIdt()
 {
   /* Program interrups/exception service routines */
@@ -113,6 +113,9 @@ void setIdt()
   setInterruptHandler(33, keyboard_handler, 0);
   setInterruptHandler(32, clock_handler,0);
   setInterruptHandler(14, pagefault_handler,0);
+  writeMSR(0x174, __KERNEL_CS);
+  writeMSR(0x175, INITIAL_ESP);
+  writeMSR(0x176, syscall_handler_sysenter);
 
   set_idt_reg(&idtR);
 }

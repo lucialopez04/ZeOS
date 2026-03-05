@@ -12,9 +12,9 @@ int __attribute__ ((__section__(".text.main")))
 
   
   write(1, "\nHello world!\n", strlen("\nHello world!\n")); 
-  int ls = gettime();
-  itoa(ls, buff);
-  write(1, buff, strlen(buff));
+  //int ls = gettime();
+  //itoa(ls, buff);
+  //write(1, buff, strlen(buff));
 
   while(1) { }
 }
