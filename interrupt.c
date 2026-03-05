@@ -94,8 +94,41 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   idt[vector].highOffset      = highWord((DWord)handler);
 }
 
+	int hexa_to_int(unsigned long hexa){
+		int enter = 0;
+		int pos = 1;
+		unsigned long x;
+		int y;
+		while(hexa != 0){
+		x = hexa % 0x10; 
+		if(x == 0x1) y = 1;
+		else if (x== 0x2) y=2;
+		else if(x == 0x3) y=3;
+		else if(x ==0x4) y=4;
+		else if(x ==0x5) y=5;
+		else if(x==0x6) y =6;
+		else if(x==0x7) y = 7;
+		else if(x==0x8) y = 8;
+		else if(x==0x9) y=9;
+		else if(x==0xa) y=10;
+		else if(x==0xb) y=11;
+		else if(x==0xc) y=12;
+		else if(x==0xd) y =13;
+		else if(x==0xe) y=14;
+		else if(x==0xf)y = 15;
+		y *=pos;
+	enter += y;
+		hexa = hexa /0x10; 
+		pos *=16;
+		}
+		return enter;
+	
+	}
 void pagefault_routine(unsigned long eip){
-  printk(eip);
+	int pagina = hexa_to_int(eip);  
+char *buff;
+	itoa(pagina, buff);
+	printk(buff);
   while(1);
 
 }
