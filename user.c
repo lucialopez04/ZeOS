@@ -1,7 +1,6 @@
 #include <libc.h>
 #include <wrappers.h>
-
-char buff[24];
+char *buff;
 
 int pid;
 
@@ -16,5 +15,6 @@ int __attribute__ ((__section__(".text.main")))
   int ls = gettime();
   itoa(ls, buff);
   write(1, buff, strlen(buff));
+
   while(1) { }
 }

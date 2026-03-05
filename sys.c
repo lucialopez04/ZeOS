@@ -12,6 +12,7 @@
 #include <mm_address.h>
 
 #include <sched.h>
+#include <system.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
