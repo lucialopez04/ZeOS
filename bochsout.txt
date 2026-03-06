@@ -31,7 +31,7 @@
 00000000000i[      ]   SB16 support: no
 00000000000i[      ]   USB support: no
 00000000000i[      ]   VGA extension support: vbe
-00000000000i[MEM0  ] allocated memory at 0x7fdbb5f2b010. after alignment, vector=0x7fdbb5f2c000
+00000000000i[MEM0  ] allocated memory at 0x7f01c485e010. after alignment, vector=0x7f01c485f000
 00000000000i[MEM0  ] 16,00MB
 00000000000i[MEM0  ] mem block size = 0x00100000, blocks=16
 00000000000i[MEM0  ] rom at 0xfffe0000/131072 ('/opt/bochs/share/bochs/BIOS-bochs-latest')
@@ -41,7 +41,7 @@
 00000000000i[DEV   ] PIIX3 PCI-to-ISA bridge present at device 1, function 0
 00000000000i[PLUGIN] init_dev of 'cmos' plugin device by virtual method
 00000000000i[CMOS  ] Using local time for initial clock
-00000000000i[CMOS  ] Setting initial clock to: Thu Mar  5 17:58:30 2026 (time0=1772729910)
+00000000000i[CMOS  ] Setting initial clock to: Fri Mar  6 19:53:53 2026 (time0=1772823233)
 00000000000i[PLUGIN] init_dev of 'dma' plugin device by virtual method
 00000000000i[DMA   ] channel 4 used by cascade
 00000000000i[PLUGIN] init_dev of 'pic' plugin device by virtual method
@@ -172,11 +172,9 @@
 00001529176i[BXVGA ] VBE known Display Interface b0c0
 00001529208i[BXVGA ] VBE known Display Interface b0c5
 00001532133i[VBIOS ] VBE Bios $Id: vbe.c,v 1.65 2014/07/08 18:02:25 vruppert Exp $
-00001556956i[XGUI  ] charmap update. Font Height is 16
-00002043984i[XGUI  ] charmap update. Font Height is 16
+00001691328i[XGUI  ] charmap update. Font Height is 16
 00014040191i[BIOS  ] Booting from 0000:7c00
-00022602743i[FLOPPY] partial read() on floppy image returns 470/512
-00022647187i[FLOPPY] read() on floppy image returns 0
+00022647187i[FLOPPY] partial read() on floppy image returns 48/512
 00022691631i[FLOPPY] read() on floppy image returns 0
 00022736075i[FLOPPY] read() on floppy image returns 0
 00022780519i[FLOPPY] read() on floppy image returns 0
@@ -239,27 +237,44 @@
 00025320825i[FLOPPY] read() on floppy image returns 0
 00025365269i[FLOPPY] read() on floppy image returns 0
 00025409713i[FLOPPY] read() on floppy image returns 0
-00076967440i[      ] Ctrl-C detected in signal handler.
-00076967440i[      ] Ctrl-C detected in signal handler.
-00076967440i[XGUI  ] Mouse capture off
-00076967440i[      ] dbg: Quit
-00076967440i[CPU0  ] CPU is in protected mode (active)
-00076967440i[CPU0  ] CS.mode = 32 bit
-00076967440i[CPU0  ] SS.mode = 32 bit
-00076967440i[CPU0  ] EFER   = 0x00000000
-00076967440i[CPU0  ] | EAX=00000000  EBX=00000000  ECX=00000001  EDX=00000005
-00076967440i[CPU0  ] | ESP=00012c3c  EBP=00012c54  ESI=000e0200  EDI=00003ff4
-00076967440i[CPU0  ] | IOPL=0 id vip vif ac vm rf nt of df if tf sf zf af PF cf
-00076967440i[CPU0  ] | SEG sltr(index|ti|rpl)     base    limit G D
-00076967440i[CPU0  ] |  CS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-00076967440i[CPU0  ] |  DS:002b( 0005| 0|  3) 00000000 ffffffff 1 1
-00076967440i[CPU0  ] |  SS:0018( 0003| 0|  0) 00000000 ffffffff 1 1
-00076967440i[CPU0  ] |  ES:002b( 0005| 0|  3) 00000000 ffffffff 1 1
-00076967440i[CPU0  ] |  FS:0000( 0000| 0|  0) 00000000 00000000 0 0
-00076967440i[CPU0  ] |  GS:0000( 0000| 0|  0) 00000000 00000000 0 0
-00076967440i[CPU0  ] | EIP=00010383 (00010383)
-00076967440i[CPU0  ] | CR0=0x80000011 CR2=0x00000000
-00076967440i[CPU0  ] | CR3=0x0002a000 CR4=0x00000000
-00076967440i[CMOS  ] Last time is 1772729929 (Thu Mar  5 17:58:49 2026)
-00076967440i[XGUI  ] Exit
-00076967440i[SIM   ] quit_sim called with exit code 0
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(9f)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(a3)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(a4)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(1f)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(24)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(9e)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(1e)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(39)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(a4)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(9f)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(1f)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(b9)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(9e)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(39)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(1e)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(20)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(9f)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(9e)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(b9)
+00032708000i[KBD   ] internal keyboard buffer full, ignoring scancode.(a0)
+00034364000p[XGUI  ] >>PANIC<< POWER button turned off.
+00034364000i[CPU0  ] CPU is in protected mode (active)
+00034364000i[CPU0  ] CS.mode = 32 bit
+00034364000i[CPU0  ] SS.mode = 32 bit
+00034364000i[CPU0  ] EFER   = 0x00000000
+00034364000i[CPU0  ] | EAX=00000005  EBX=00001380  ECX=00000000  EDX=0000002b
+00034364000i[CPU0  ] | ESP=00413fd0  EBP=00413fe8  ESI=000e0200  EDI=00003ff4
+00034364000i[CPU0  ] | IOPL=0 id vip vif ac vm rf nt of df IF tf sf zf af pf cf
+00034364000i[CPU0  ] | SEG sltr(index|ti|rpl)     base    limit G D
+00034364000i[CPU0  ] |  CS:0023( 0004| 0|  3) 00000000 ffffffff 1 1
+00034364000i[CPU0  ] |  DS:002b( 0005| 0|  3) 00000000 ffffffff 1 1
+00034364000i[CPU0  ] |  SS:002b( 0005| 0|  3) 00000000 ffffffff 1 1
+00034364000i[CPU0  ] |  ES:002b( 0005| 0|  3) 00000000 ffffffff 1 1
+00034364000i[CPU0  ] |  FS:0000( 0000| 0|  0) 00000000 00000000 0 0
+00034364000i[CPU0  ] |  GS:0000( 0000| 0|  0) 00000000 00000000 0 0
+00034364000i[CPU0  ] | EIP=0041408d (0041408d)
+00034364000i[CPU0  ] | CR0=0x80000011 CR2=0x00000000
+00034364000i[CPU0  ] | CR3=0x0002a000 CR4=0x00000000
+00034364000i[CMOS  ] Last time is 1772823241 (Fri Mar  6 19:54:01 2026)
+00034364000i[XGUI  ] Exit
+00034364000i[SIM   ] quit_sim called with exit code 1

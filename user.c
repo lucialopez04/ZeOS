@@ -13,10 +13,10 @@ int __attribute__ ((__section__(".text.main")))
   
   //char* p = 0;
   //*p = 'x';
-  //write(1, "\nHello world!\n", strlen("\nHello world!\n")); 
-  //char buff2[16];
-  //itoa(gettime(), buff2);
-  //write(1, buff2, strlen(buff2));
-  //write(1, "Hi hi", strlen("Hi hi"));
+  write(1, "\nHello world!\n", strlen("\nHello world!\n")); 
+  char buff2[16];
+  itoa(gettime(), buff2);
+  write(1, buff2, strlen(buff2));
+  write(1, "Hi hi", strlen("Hi hi"));
   while(1) { }
 }
