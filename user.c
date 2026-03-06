@@ -11,10 +11,12 @@ int __attribute__ ((__section__(".text.main")))
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
 
   
-  write(1, "\nHello world!\n", strlen("\nHello world!\n")); 
-  //int ls = gettime();
-  //itoa(ls, buff);
-  //write(1, buff, strlen(buff));
-
+  //char* p = 0;
+  //*p = 'x';
+  //write(1, "\nHello world!\n", strlen("\nHello world!\n")); 
+  //char buff2[16];
+  //itoa(gettime(), buff2);
+  //write(1, buff2, strlen(buff2));
+  //write(1, "Hi hi", strlen("Hi hi"));
   while(1) { }
 }
