@@ -93,6 +93,36 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   idt[vector].flags           = flags;
   idt[vector].highOffset      = highWord((DWord)handler);
 }
+void itoh(long a, char *b) // integer a hexadecimal (in char)
+{
+  int i;
+  char c;
+  if (a==0) { b[0]='0'; b[1]=0; return ;}
+  
+  i=0;
+  while (a>0)
+  {
+    long i1 = a %16;
+    if(i1 < 10) b[i] = i1 + '0';
+    else if (i1 == 10) b[i] = 'a';
+    else if (i1 == 11) b[i] = 'b';
+    else if (i1 == 12) b[i] = 'c';
+    else if (i1 == 13) b[i] = 'd';
+    else if (i1 == 14) b[i] = 'e';
+    else if (i1 == 15) b[i] = 'f';
+    a=a/16;
+    i++;
+  }
+  
+  for (int i2=0; i2<i/2; i2++)
+  {
+    c=b[i2];
+    b[i2]=b[i-i2-1];
+    b[i-i2-1]=c;
+  }
+  b[i]=0;
+}
+
 
 long hexa_to_int(unsigned long hexa){
 		long enter = 0;
@@ -110,10 +140,11 @@ long hexa_to_int(unsigned long hexa){
 
 void pagefault_routine(unsigned long eip){
 	long pagina = hexa_to_int(eip);
-	printk("Process generates a PAGE FAULT exception at EIP (in decimal): ");
+	printk("Process generates a PAGE FAULT exception at EIP : 0x");
 	char buff[24];
-	itoa(pagina, buff);
+	itoh(pagina, buff);
 	printk(buff);
+  printk("\n");
   while(1);
 }
 
