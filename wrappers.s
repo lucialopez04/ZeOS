@@ -10,14 +10,12 @@
 .extern errno
 
 .globl write; .type write, @function; .align 0; write:
-    pushl %ebp
-    mov %esp, %ebp
     pushl %ebx
     pushl %ecx
     pushl %edx
-    movl 8(%ebp), %edx
-    movl 12(%ebp), %ecx
-    movl 16(%ebp), %ebx
+    movl 16(%esp), %edx
+    movl 20(%esp), %ecx
+    movl 24(%esp), %ebx
     movl $4, %eax
     pushl $return_address
     pushl %ebp
@@ -37,13 +35,9 @@ return_address:
     movl $-1, %eax
 
 write_fin:
-    movl %ebp, %esp
-    popl %ebp
     ret
 
 .globl gettime; .type gettime, @function; .align 0; gettime:
-    pushl %ebp
-    mov %esp, %ebp
     movl $10, %eax
     push %ecx
     push %edx
@@ -57,6 +51,4 @@ return_address1:
     add $4, %esp
     pop %edx
     pop %ecx
-    movl %ebp, %esp
-    popl %ebp
     ret
