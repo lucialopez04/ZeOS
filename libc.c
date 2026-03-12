@@ -47,22 +47,22 @@ int strlen(char *a)
 
 void perror(void) {
   if (errno == EINVAL) {
-    //write(2, "Invalid argument\n", 17);
+    write(1, "Invalid argument\n", strlen("Invalid argument\n"));
   }
   else if (errno == EFAULT) {
-    //write(2, "Bad address\n", 12);
+    write(1, "Bad address\n", strlen("Bad address\n"));
   }
   else if (errno == EBADF) {
-    //write(2, "Bad file descriptor\n", 20);
+    write(1, "Bad file descriptor\n", strlen("Bad file descriptor\n"));
   }
   else if (errno == EACCES) {
-    //write(2, "Permission denied\n", 18);
+    write(1, "Permission denied\n", strlen("Permission denied\n"));
   }
   else if (errno == ENOSYS) {
-    //write(2, "Function not implemented\n", 25);
+    write(1, "Function not implemented\n", strlen("Function not implemented\n"));
   }
   else {
-    //write(2, "Unknown error\n", 14);
+    write(1, "Unknown error\n", 14);
   }
 }
 
