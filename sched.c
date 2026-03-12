@@ -6,8 +6,12 @@
 #include <mm.h>
 #include <io.h>
 #include <hardware.h>
-
+struct list_head ready_queue;
 char initial_stack[KERNEL_STACK_SIZE]; // Space for the initial system stack
+
+struct task_struct *list_head_to_task_struct(struct list_head *l) {
+	printk("hola");
+}
 
 void cpu_idle(void)
 {
