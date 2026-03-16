@@ -9,6 +9,8 @@
 struct list_head ready_queue;
 char initial_stack[KERNEL_STACK_SIZE]; // Space for the initial system stack
 struct task_struct * init_task;
+struct task_struct * idle_task;
+
 
 struct task_struct *list_head_to_task_struct(struct list_head *l) {
 	// Encuentra la dirección de una task_struct dada una dirección a list_head
@@ -40,7 +42,32 @@ void init_idle (void)
 	set_ss_pag(TPSystem, page_table_system, page_table_system, 0); //Mapea la tabla de sistema 
 	set_ss_pag(DirAddress, 0, page_table_system, 0); //Asigna a la primera entrada del directorio la tabla de sistema
 
+	// Inicializar el campo del directorio 
+    init_task.dir_pages_baseAddr = DirAddress;
+
+	// Inicializar contexto de ejecución 
+	__asm__(
+		"push cpu_idle"
+		"push $0"
+		"movl init_task.k_esp, %ebp "
+
+			// REPASAR ESTO
+
+	);
+
+		// Alocatar un nuevo task_union
+	int init_union = alloc_frame();
+	union task_union *idle_task_union = (union task_union *)  (init_union << 12);
+
+	// Mapear PCB en la tabla de páginas de sistema 
+	set_ss_pag(TPSystem, init_struct, init_struct, 0); 
 	
+	// Asignar PID 1 al proceso
+	init_task.PID = 0;
+	// tss ha de apuntar a current? y k el directorio sea current?
+
+		//Inicializar la variable global init_task con el init PCB 
+	idle_task = *init_task_union.task;
 
 }
 
@@ -67,7 +94,7 @@ void init_task1(void)
 	union task_union *init_task_union = (union task_union *)  (init_union << 12);
 
 	// Mapear PCB en la tabla de páginas de sistema 
-	set_ss_pag(TPSystem, init_struct, init_struct, 0); 
+	set_ss_pag(TPSystem, init_union.task, init_union.task, 0); 
 	
 	// Asignar PID 1 al proceso
 	init_task.PID = 1;
