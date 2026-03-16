@@ -131,3 +131,7 @@ page_table_entry * get_PT (struct task_struct *t)
        return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
 }
 
+void task_switch(union task_union *new){
+
+	
+}
