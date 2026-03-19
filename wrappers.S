@@ -52,3 +52,22 @@ return_address1:
     popl %ecx
     popl %ebp
     ret
+
+ENTRY(getpid)
+    pushl %ebp
+    movl %esp, %ebp
+    movl $20, %eax
+    push %ecx
+    push %edx
+    pushl $return_address2
+    pushl %ebp
+    movl %esp, %ebp
+    sysenter
+
+return_address2:
+    popl %ebp
+    addl $4, %esp
+    popl %edx
+    popl %ecx
+    popl %ebp
+    ret

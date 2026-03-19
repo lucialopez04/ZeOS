@@ -46,3 +46,15 @@ int sys_write(int fd, char * buffer, int size) {
 
 }
 
+int sys_getpid(void) {
+  struct task_struct result = current();
+  return result->PID;
+}
+
+int sys_fork(void) {
+
+}
+
+void sys_exit(void) {
+
+}
