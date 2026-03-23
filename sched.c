@@ -64,7 +64,7 @@ void init_idle (void)
 	// Mapear PCB en la tabla de páginas de sistema 
 	set_ss_pag(TPSystem, idle_task_union->task, idle_task_union->task, 0); 
 	
-	// Asignar PID 1 al proceso
+	// Asignar PID 0 al proceso
 	idle_task->PID = 0;
 	// tss ha de apuntar a current? y k el directorio sea current?
 
