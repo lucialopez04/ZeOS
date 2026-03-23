@@ -43,33 +43,31 @@ void init_idle (void)
 	set_ss_pag(TPSystem, page_table_system, page_table_system, 0); //Mapea la tabla de sistema 
 	set_ss_pag(DirAddress, 0, page_table_system, 0); //Asigna a la primera entrada del directorio la tabla de sistema
 
-	// Inicializar el campo del directorio 
-    idle_task->dir_pages_baseAddr = DirAddress;
 
-	// Inicializar contexto de ejecución 
-	/*__asm__(
-		"push cpu_idle"
-		"push $0"
-		"movl idle_task->k_esp, %ebp "
-
-			// REPASAR ESTO --> ponerlo en un .S
-
-	);*/
-	exec_ctx_idle();
 
 		// Alocatar un nuevo task_union
-	int idle_union = alloc_frame();
-	union task_union *idle_task_union = (union task_union *)  (idle_union << 12);
+	int idle_task_union = alloc_frame();
+	union task_union *idle_union = (union task_union *)  (idle_task_union << 12);
 
 	// Mapear PCB en la tabla de páginas de sistema 
-	set_ss_pag(TPSystem, idle_task_union->task, idle_task_union->task, 0); 
+	set_ss_pag(TPSystem, idle_union->task, idle_union->task, 0); 
 	
 	// Asignar PID 0 al proceso
-	idle_task->PID = 0;
+	idle_union->task->PID = 0;
 	// tss ha de apuntar a current? y k el directorio sea current?
 
+
+	// Inicializar el campo del directorio 
+    idle_union->task->dir_pages_baseAddr = DirAddress;
+
+	
+	exec_ctx_idle(idle_union->task, idle_union->task->k.esp);
+
+
+
+	
 	//Inicializar la variable global init_task con el init PCB 
-	idle_task = *idle_task_union->task;
+	idle_task = *idle_union->task;
 
 }
 
@@ -133,7 +131,6 @@ page_table_entry * get_PT (struct task_struct *t)
        return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
 }
 
-void task_switch(union task_union *new){
+void task_switch(union task_union *new); // new is a pointer to the task_union of the process that will be executed
 
-	
-}
+void inner_task_switch(union task_union *new);
