@@ -55,6 +55,7 @@ void init_idle (void)
 			// REPASAR ESTO --> ponerlo en un .S
 
 	);*/
+	exec_ctx_idle();
 
 		// Alocatar un nuevo task_union
 	int idle_union = alloc_frame();
