@@ -52,7 +52,7 @@ void write_cr0(int value);
 
 void __sti(void);
 
-struct task_struct * current();
+union task_union * current();
 
 /**************************
  ** setSegmentRegisters ***

@@ -47,8 +47,8 @@ int sys_write(int fd, char * buffer, int size) {
 }
 
 int sys_getpid(void) {
-  struct task_struct result = current();
-  return result->PID;
+  union task_union *result = current();
+  return result->task.PID;
 }
 
 int sys_fork(void) {

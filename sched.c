@@ -6,6 +6,7 @@
 #include <mm.h>
 #include <io.h>
 #include <hardware.h>
+
 struct list_head ready_queue;
 char initial_stack[KERNEL_STACK_SIZE]; // Space for the initial system stack
 struct task_struct * init_task;
@@ -37,12 +38,12 @@ void init_idle (void)
 	int Dir = alloc_frame();	// Alocatar el nuevo directorio
 	page_table_entry *DirAddress = (page_table_entry *)(Dir << 12);
 	clear_page_table(DirAddress); 	// inicializar todas las entradas del directorio
+	
 	page_table_entry *TPSystem = (page_table_entry *)(page_table_system << 12);
-	set_kernel_pages(TPSystem);	// Inicializar la tabla de pàginas del kernel
+	//set_kernel_pages(TPSystem);	// Inicializar la tabla de pàginas del kernel
 	set_ss_pag(TPSystem, Dir, Dir, 0); //Mapea el directorio 
 	set_ss_pag(TPSystem, page_table_system, page_table_system, 0); //Mapea la tabla de sistema 
 	set_ss_pag(DirAddress, 0, page_table_system, 0); //Asigna a la primera entrada del directorio la tabla de sistema
-
 
 
 		// Alocatar un nuevo task_union
@@ -58,14 +59,12 @@ void init_idle (void)
 	// Inicializar el campo del directorio 
     idle_union->task.dir_pages_baseAddr = DirAddress;
 
-	
-	exec_ctx_idle(idle_union->task, idle_union->task->k.esp);
-
-
+	unsigned long *stack_top = (unsigned long *)&(idle_union->stack[KERNEL_STACK_SIZE]);
+	exec_ctx_idle(stack_top, &(idle_union->task.k_esp));
 
 	
 	//Inicializar la variable global init_task con el init PCB 
-	idle_task = idle_union->task;
+	idle_task = (struct task_struct *) idle_union;
 
 }
 
@@ -87,6 +86,7 @@ void init_task1(void)
 	set_ss_pag(DirAddress, 0, page_table_system, 0); //Asigna a la primera entrada del directorio la tabla de sistema
 	set_ss_pag(DirAddress, 1, page_table_user, 3); //Asigna a la primera entrada del directorio la tabla de usuario
 
+	// Obtener el task_struct de free queue
 	// Alocatar un nuevo task_union
 	int init_union = alloc_frame();
 	union task_union *init_task_union = (union task_union *)  (init_union << 12);
@@ -95,19 +95,28 @@ void init_task1(void)
 	set_ss_pag(TPSystem, init_union, init_union, 0); 
 	
 	// Asignar PID 1 al proceso
-	init_union->task.PID = 1;
+	init_task_union->task.PID = 1;
 
 	// Actualizar el TSS para que apunte a la nueva pila de sistema de la tarea
 	writeMSR(0x175, init_task_union->stack);
 
 	// Inicializar el campo de la dirección del directorio en el union
-    init_union->task.dir_pages_baseAddr = DirAddress;
+    init_task_union->task.dir_pages_baseAddr = DirAddress;
+
+//Preparación de la pila 
+	unsigned int *stack_top = (unsigned int *)&(init_task_union->stack[KERNEL_STACK_SIZE]);
+
+
+    init_task_union->task.k_esp = (unsigned int)stack_top;
+
+
+
 
 	// Hacer que el directorio sea current
 	set_cr3(DirAddress);
 
 	//Inicializar la variable global init_task con el init PCB 
-	init_task = init_union->task;
+	init_task = (struct task_struct *)init_task_union;
 
 }
 
@@ -128,7 +137,3 @@ page_table_entry * get_PT (struct task_struct *t)
 {
        return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
 }
-
-void task_switch(union task_union *new); // new is a pointer to the task_union of the process that will be executed
-
-void inner_task_switch(union task_union *new);

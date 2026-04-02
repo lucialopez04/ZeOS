@@ -6,6 +6,7 @@
 #include <segment.h>
 #include <hardware.h>
 #include <io.h>
+#include <sched.h>
 
 
 #include <zeos_interrupt.h>
@@ -38,6 +39,18 @@ void keyboard_routine() {
       if (key < sizeof(char_map)) {
         char map_key = char_map[key];
         printc_xy(78, 24,map_key);
+        if (map_key =='p'){
+            if(current()->task.PID == 0){
+    task_switch((union task_union *)init_task);
+    printk("init_task\n");
+
+  }
+  else{
+    task_switch((union task_union *)idle_task);
+    printk("idle_task\n");
+  } 
+
+        }
       }
       else printc_xy(78,24,'C');
     }
@@ -45,7 +58,9 @@ void keyboard_routine() {
 int zeos_ticks = 0;
 void clock_routine() {
   ++zeos_ticks;
-  zeos_show_clock();
+    zeos_show_clock();
+
+
 }
 void clock_handler();
 void pagefault_handler();
