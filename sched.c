@@ -50,24 +50,20 @@ void init_idle (void)
 	union task_union *idle_union = (union task_union *)  (idle_task_union << 12);
 
 	// Mapear PCB en la tabla de páginas de sistema 
-	set_ss_pag(TPSystem, idle_union->task, idle_union->task, 0); 
+	set_ss_pag(TPSystem, idle_task_union, idle_task_union, 0); 
 	
 	// Asignar PID 0 al proceso
-	idle_union->task->PID = 0;
+	idle_union->task.PID = 0;
 	// tss ha de apuntar a current? y k el directorio sea current?
-
-
 	// Inicializar el campo del directorio 
-    idle_union->task->dir_pages_baseAddr = DirAddress;
+    idle_union->task.dir_pages_baseAddr = DirAddress;
 
 	
-	exec_ctx_idle(idle_union->task, idle_union->task->k.esp);
+	exec_ctx_idle(idle_union->task, idle_union->task.k_esp);
 
 
-
-	
 	//Inicializar la variable global init_task con el init PCB 
-	idle_task = *idle_union->task;
+	idle_task = idle_union->task;
 
 }
 
@@ -94,22 +90,22 @@ void init_task1(void)
 	union task_union *init_task_union = (union task_union *)  (init_union << 12);
 
 	// Mapear PCB en la tabla de páginas de sistema 
-	set_ss_pag(TPSystem, init_union->task, init_union->task, 0); 
+	set_ss_pag(TPSystem, init_union, init_union, 0); 
 	
 	// Asignar PID 1 al proceso
-	init_task->PID = 1;
+	init_union->task.PID = 1;
 
 	// Actualizar el TSS para que apunte a la nueva pila de sistema de la tarea
 	writeMSR(0x175, init_task_union->stack);
 
 	// Inicializar el campo de la dirección del directorio en el union
-    init_task_union->task.dir_pages_baseAddr = DirAddress;
+    init_union->task.dir_pages_baseAddr = DirAddress;
 
 	// Hacer que el directorio sea current
 	set_cr3(DirAddress);
 
 	//Inicializar la variable global init_task con el init PCB 
-	init_task = *init_task_union->task;
+	init_task = init_union->task;
 
 }
 
