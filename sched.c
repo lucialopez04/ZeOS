@@ -62,9 +62,6 @@ void init_idle (void)
 
 	
 	exec_ctx_idle(idle_union->task, idle_union->task->k.esp);
-
-
-
 	
 	//Inicializar la variable global init_task con el init PCB 
 	idle_task = *idle_union->task;

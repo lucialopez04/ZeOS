@@ -78,6 +78,8 @@ msr.s: msr.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 hardware.s: hardware.S $(INCLUDEDIR)/asm.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
+sched.s: sched.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/types.h
+
 user.o:user.c $(INCLUDEDIR)/libc.h $(INCLUDEDIR)/wrappers.h
 
 interrupt.o:interrupt.c $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h $(INCLUDEDIR)/msr.h
