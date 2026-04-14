@@ -9,8 +9,8 @@
 
 struct list_head ready_queue;
 char initial_stack[KERNEL_STACK_SIZE]; // Space for the initial system stack
-struct task_struct * init_task;
-struct task_struct * idle_task;
+struct task_struct *init_task;
+struct task_struct *idle_task;
 
 int page_table_system;	// Alocatar una tabla de páginas física para guardar los mapeos del sistema
 
@@ -102,15 +102,15 @@ void init_task1(void)
 
 	// Inicializar el campo de la dirección del directorio en el union
     init_task_union->task.dir_pages_baseAddr = DirAddress;
+	char *base = (char*)&(init_task_union->task);
+	char *ptr_k_esp = (char*)&(init_task_union->task.k_esp);
+	int offset = (int) (ptr_k_esp - base);
+	if (offset != 16) while(1);
+
 
 //Preparación de la pila 
-	unsigned int *stack_top = (unsigned int *)&(init_task_union->stack[KERNEL_STACK_SIZE]);
-
-
-    init_task_union->task.k_esp = (unsigned int)stack_top;
-
-
-
+	unsigned long *stack_top = (unsigned long *)&(init_task_union->stack[KERNEL_STACK_SIZE]);
+	exec_ctx_init(stack_top, &(init_task_union->task.k_esp));
 
 	// Hacer que el directorio sea current
 	set_cr3(DirAddress);
@@ -136,4 +136,11 @@ page_table_entry * get_DIR (struct task_struct *t)
 page_table_entry * get_PT (struct task_struct *t)
 {
        return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
+}
+
+
+void update_memory_context(union task_union *new){
+
+	tss.esp0 = (unsigned long)&(new->stack[KERNEL_STACK_SIZE]);
+	set_cr3(new->task.dir_pages_baseAddr);
 }
