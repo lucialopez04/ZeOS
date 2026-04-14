@@ -59,8 +59,13 @@ void init_idle (void)
 	// Inicializar el campo del directorio 
     idle_union->task.dir_pages_baseAddr = DirAddress;
 
-	unsigned long *stack_top = (unsigned long *)&(idle_union->stack[KERNEL_STACK_SIZE]);
-	exec_ctx_idle(stack_top, &(idle_union->task.k_esp));
+	idle_union->stack[KERNEL_STACK_SIZE-1] = (unsigned long) &cpu_idle;
+	idle_union->stack[KERNEL_STACK_SIZE-2] = 0; // pop ebp
+	idle_union->stack[KERNEL_STACK_SIZE-3] = 0; // pop esi
+	idle_union->stack[KERNEL_STACK_SIZE-4] = 0;  // pop edi
+	idle_union->stack[KERNEL_STACK_SIZE-5] = 0;   // pop ebx
+
+	idle_union->task.k_esp = (unsigned int*)&idle_union->stack[KERNEL_STACK_SIZE-5];
 
 	
 	//Inicializar la variable global init_task con el init PCB 
@@ -74,15 +79,18 @@ void init_task1(void)
 	int Dir = alloc_frame();	// Alocatar el nuevo directorio
 	page_table_entry *DirAddress = (page_table_entry *)(Dir << 12);
 	clear_page_table(DirAddress); 	// inicializar todas las entradas del directorio
+
 	page_table_system = alloc_frame();		// Alocatar una tabla de páginas física para guardar los mapeos del sistema
 	page_table_entry *TPSystem = (page_table_entry *)(page_table_system << 12);
 	set_kernel_pages(TPSystem);	// Inicializar la tabla de pàginas del kernel
+
 	int page_table_user = alloc_frame();		// Alocatar una tabla de páginas física para guardar los mapeos del usuario
 	page_table_entry *TPUser = (page_table_entry *)(page_table_user << 12);
 	set_user_pages(TPUser);	// Inicializar la tabla de pàginas del usuario
+
 	set_ss_pag(TPSystem, Dir, Dir, 0); //Mapea el directorio 
 	set_ss_pag(TPSystem, page_table_system, page_table_system, 0); //Mapea la tabla de sistema 
-	set_ss_pag(TPSystem, page_table_user, page_table_user, 0); //Mapea la tabla de sistema 
+	set_ss_pag(TPSystem, page_table_user, page_table_user, 1); //Mapea la tabla de usuario 
 	set_ss_pag(DirAddress, 0, page_table_system, 0); //Asigna a la primera entrada del directorio la tabla de sistema
 	set_ss_pag(DirAddress, 1, page_table_user, 3); //Asigna a la primera entrada del directorio la tabla de usuario
 
@@ -96,21 +104,18 @@ void init_task1(void)
 	
 	// Asignar PID 1 al proceso
 	init_task_union->task.PID = 1;
+	init_task_union->task.dir_pages_baseAddr = DirAddress;
 
-	// Actualizar el TSS para que apunte a la nueva pila de sistema de la tarea
-	writeMSR(0x175, init_task_union->stack);
 
-	// Inicializar el campo de la dirección del directorio en el union
-    init_task_union->task.dir_pages_baseAddr = DirAddress;
-	char *base = (char*)&(init_task_union->task);
-	char *ptr_k_esp = (char*)&(init_task_union->task.k_esp);
-	int offset = (int) (ptr_k_esp - base);
-	if (offset != 16) while(1);
 
 
 //Preparación de la pila 
 	unsigned long *stack_top = (unsigned long *)&(init_task_union->stack[KERNEL_STACK_SIZE]);
-	exec_ctx_init(stack_top, &(init_task_union->task.k_esp));
+		// Actualizar el TSS para que apunte a la nueva pila de sistema de la tarea
+	writeMSR(0x175, stack_top);
+	tss.esp0 = stack_top;
+
+	//exec_ctx_init(stack_top, &(init_task_union->task.k_esp));
 
 	// Hacer que el directorio sea current
 	set_cr3(DirAddress);
@@ -138,9 +143,7 @@ page_table_entry * get_PT (struct task_struct *t)
        return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
 }
 
-
-void update_memory_context(union task_union *new){
-
+void inner_task_switch(union task_union *new){
 	tss.esp0 = (unsigned long)&(new->stack[KERNEL_STACK_SIZE]);
 	set_cr3(new->task.dir_pages_baseAddr);
 }

@@ -35,7 +35,6 @@ SYSOBJ = \
 	list.o \
 	msr.o \
 	hardware.o \
-	switch.o
 
 LIBZEOS = -L . -l zeos
 
@@ -77,9 +76,6 @@ msr.s: msr.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
 hardware.s: hardware.S $(INCLUDEDIR)/asm.h
-	$(CPP) $(ASMFLAGS) -o $@ $<
-
-switch.s: switch.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/types.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
 user.o:user.c $(INCLUDEDIR)/libc.h $(INCLUDEDIR)/wrappers.h

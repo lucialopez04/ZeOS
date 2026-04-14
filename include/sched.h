@@ -53,5 +53,4 @@ extern void exec_ctx_init(unsigned long *stack_top, unsigned int *k_esp);
 void task_switch(union task_union *new); // new is a pointer to the task_union of the process that will be executed
 
 void inner_task_switch(union task_union *new);
-void update_memory_context(union task_union *new);
 #endif  /* __SCHED_H__ */

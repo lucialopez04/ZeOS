@@ -1,5 +1,5 @@
 /*
- * system.c - 
+ * system.c -
  */
 
 #include <segment.h>
@@ -61,7 +61,7 @@ int __attribute__((__section__(".text.main")))
   init_task1();
   /* Initialize idle task  data */
   init_idle();
-  
+ 
 
   /* Move user code/data now (after the page table initialization) */
   copy_data((void *) KERNEL_START + *p_sys_size, (void*)L_USER_START, *p_usr_size);
@@ -69,10 +69,10 @@ int __attribute__((__section__(".text.main")))
 
   printk("Entering user mode...");
 
-  set_eflags(); 
-  enable_int(); 
-  
-  
+  set_eflags();
+  enable_int();
+ 
+ 
 
 
   /*

@@ -42,13 +42,11 @@ void keyboard_routine() {
         if (map_key =='p'){
             if(current()->task.PID == 0){
     task_switch((union task_union *)init_task);
-    printk("init_task\n");
-
+printc_xy(78,24,'I');
   }
   else{
     task_switch((union task_union *)idle_task);
-    printk("idle_task\n");
-  } 
+printc_xy(78,24,'O');  } 
 
         }
       }

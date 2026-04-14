@@ -117,3 +117,28 @@ ENTRY(pagefault_handler)
       call pagefault_routine
       RESTORE_ALL
       iret
+
+ENTRY(task_switch)
+      pushl %ebp
+      movl %esp, %ebp
+
+      pushl %esi
+      pushl %edi
+      pushl %ebx
+
+      pushl 8(%ebp)
+      call inner_task_switch 
+      addl $4,%esp 
+
+      movl %esp, %eax
+      andl $0xFFFFF000, %eax
+      movl %esp, 16(%eax)
+
+      movl 8(%ebp), %edx
+      movl 16(%edx), %esp
+      popl %ebx
+      popl %edi 
+      popl %esi 
+      
+      popl %ebp
+      ret
