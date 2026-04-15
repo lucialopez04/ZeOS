@@ -19,6 +19,10 @@ struct task_struct {
   page_table_entry *dir_pages_baseAddr;
   struct list_head list;
   unsigned int k_esp;
+  int quantum;
+  int pending_unblocks;
+  struct list_head childs;
+  struct task_struct *parent;
 };
 
 union task_union {
