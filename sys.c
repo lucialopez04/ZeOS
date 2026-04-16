@@ -166,10 +166,13 @@ int sys_fork(void) {
   //5.3. Piensa en los registros no comunes con el proceso hijo y modifica su 
   //contenido en la pila de sistema para que cada uno reciba su valor cuando el 
   //contexto sea restaurado.
-
+  TS_child->quantum = ;
+  TS_child->pending_unblocks = 0;
+  
   //6. inserta nuevo proceso en readyqueue (para que sea luego usado por scheduler)
   INIT_LIST_HEAD(&(TS_child.list));
   list_add_tail(&(TS_child.list), &ready_queue);
+  TS_child.estado_actual = ST_READY;
   //7. retorna PID del proceso hijo
   return TS_child.PID;
   
@@ -188,6 +191,11 @@ void sys_exit(void) {
   //directorio y estructuras de sistema y de usuario
   free_frame(((unsigned int) pt_curr) >> 12);
   free_frame(((unsigned int) curr) >> 12);
+
+  //1.5 Quita el proceso de la lista del padre, mueve cualquier child vivo de 
+  //proceso current a proceso idle (heredará a los niños) y actualiza la info
+  //del padre acorde a esto.
+
   //2. Utiliza la interfaz de scheduler para seleccionar un nuevo proceso a ser
   //ejecutado y hacer context switch
   sched_next_rr();
@@ -204,14 +212,14 @@ void sys_block(void) {
     //y llamar al scheduler para ejecutar un nuevo proceso
     //Si hay alguno pendiente de desbloquear, el proceso no será bloqueado.
 	struct task_struct  *curr = current();
-	if (curr.pending_unblocks == 0) {
+	if (curr->pending_unblocks == 0) {
 		/*struct list_head currH = curr.list;
 		list_add_tail(&(currH), &blocked);*/
 		update_process_state_rr(curr, &blocked);
 		sched_next_rr();
 	}
 	else {
-		--curr.pending_unblocks;
+		curr->pending_unblocks--;
 	}
 }
 
@@ -221,5 +229,24 @@ int sys_unblock(int pid) {
 	//Ready y devolver 0 como resultado de la llamada de sistema
 	//si el proceso no está bloqueado, solo incrementa pending_unblocks,
 	//de otra manera, retorna -1
-  struct task_struct *curr = current();
+  struct task_struct *curr = &current()->task;
+  struct list_head *pos;
+  struct list_head *child = NULL;
+  //mira en la lista de hijos del proceso padre si hay alguien con PID == pid
+  list_for_each(pos, &curr->childs) {
+    struct task_struct *chosen = list_head_to_task_struct(pos);
+    if (chosen->PID == pid) {
+      child = chosen;
+      break;
+    }
+  }
+  if (child == NULL) return -1;
+  //si proceso está bloqueado
+  if (child->estado_actual == ST_BLOCKED) {
+    update_process_state_rr(child, &ready_queue);
+  }
+  else {
+    curr->pending_unblocks++;
+  }
+  return 0;
 }

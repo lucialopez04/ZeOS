@@ -138,3 +138,31 @@ return_address_block:
     popl %ecx
     popl %ebp
     ret
+
+ENTRY(fork)
+    pushl %ebp
+    movl %esp, %ebp
+    movl $7, %eax          /* identificador de fork */
+    pushl %ecx
+    pushl %edx
+    pushl $return_address_unblock
+    pushl %ebp
+    movl %esp, %ebp
+    sysenter
+
+return_address_unblock:
+    popl %ebp
+    addl $4, %esp
+    popl %edx
+    popl %ecx
+
+    /* Procesar resultado: si negativo -> errno = -resultado, retorna -1 */
+    cmpl $0, %eax
+    jge fork_ok
+    negl %eax
+    movl %eax, errno
+    movl $-1, %eax
+
+fork_ok:
+    popl %ebp
+    ret

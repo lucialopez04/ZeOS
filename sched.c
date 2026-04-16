@@ -163,8 +163,8 @@ void update_sched_data_rr(void) {
 
 int needs_sched_rr(void) {
     //Retorna 1 si es necesario cambiar el proceso y 0 si no
-    struct task_struct curr = current();
-    if (curr.quantum == 0) return 1;
+    struct task_struct *curr = &(current()->task);
+    if (curr->quantum == 0) return 1;
     else return 0;
 }
 
@@ -175,11 +175,16 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
     //no hay necesidad de eliminarla de ninguna cola.
     //dst_queue es la nueva queue a que t se tiene que insertar
     //En el caso de que el nuevo estado está en running, dst_queue es NULL (?
+	struct list_head *currH = &(t->list);
 	if (dst_queue == NULL) {
-		
+		t->estado_actual = ST_RUN;
 	}
-	else if (/*!ST_RUN*/) {
-		struct list_head currH = t.list;
+	else if (t->estado_actual != ST_RUN) {
+		list_del(&currH);
+		if (dst_queue == &ready_queue) {
+			t->estado_actual = ST_READY;
+		}
+		else t->estado_actual = ST_BLOCKED;
 		list_add_tail(&(currH), &dst_queue);
 	}
 }
