@@ -123,7 +123,8 @@ void init_task1(void)
 
 void init_sched()
 {
-
+	INIT_LIST_HEAD(&ready_queue);
+	INIT_LIST_HEAD(&blocked);
 }
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -143,4 +144,61 @@ void update_memory_context(union task_union *new){
 
 	tss.esp0 = (unsigned long)&(new->stack[KERNEL_STACK_SIZE]);
 	set_cr3(new->task.dir_pages_baseAddr);
+}
+
+int get_quantum(struct task_struct*t) {
+    return t.quantum;
+}
+
+void set_quantum(struct task_struct *t, int new_quantum) {
+    t.quantum = new_quantum;
+}
+
+void update_sched_data_rr(void) {
+    //Actualiza el número de ticks que el proceso ha ejecutado desde que
+    //le asignaron la cpu
+	struct task_struct *curr = current();
+
+}
+
+int needs_sched_rr(void) {
+    //Retorna 1 si es necesario cambiar el proceso y 0 si no
+    struct task_struct *curr = &(current()->task);
+    if (curr->quantum == 0) return 1;
+    else return 0;
+}
+
+void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue) {
+    //actualiza el estado actual de un proceso a otro estado
+    //La función elimina el proceso de su cola actual (estado) y lo mete en una 
+    //nueva queue (p.e la free o ready). Si current está en proceso de running,
+    //no hay necesidad de eliminarla de ninguna cola.
+    //dst_queue es la nueva queue a que t se tiene que insertar
+    //En el caso de que el nuevo estado está en running, dst_queue es NULL (?
+	struct list_head *currH = &(t->list);
+	if (dst_queue == NULL) {
+		t->estado_actual = ST_RUN;
+	}
+	else if (t->estado_actual != ST_RUN) {
+		list_del(&currH);
+		if (dst_queue == &ready_queue) {
+			t->estado_actual = ST_READY;
+		}
+		else t->estado_actual = ST_BLOCKED;
+		list_add_tail(&(currH), &dst_queue);
+	}
+}
+
+void sched_next_rr(void) {
+    //Selecciona el siguiente proceso a ejecutar, lo extrae de ready queue e
+    //invoca el cambio de contexto (task switch), esta función se debe ejecutar
+    //después de actualizar el estado del proceso actual (update_process_state_rr)
+	if (needs_sched_rr()) {
+		struct list_head * e = list_first(&ready_queue);
+ 		// Remove the selected element from the list
+ 		list_del(e);
+		struct task_struct *new = list_head_to_task_struct(e);
+		struct task_union *new2 = (task_union*) (new);
+		task_switch(new2);
+	}
 }
