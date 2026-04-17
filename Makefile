@@ -79,7 +79,7 @@ msr.s: msr.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 hardware.s: hardware.S $(INCLUDEDIR)/asm.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
-switch.s: switch.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/types.h
+switch.s: switch.S $(INCLUDEDIR)/asm.h 
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
 user.o:user.c $(INCLUDEDIR)/libc.h $(INCLUDEDIR)/wrappers.h

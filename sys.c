@@ -63,7 +63,7 @@ int sys_fork(void) {
 
   //2. copia el task union del padre al hijo usando copy_data
   union task_union *padre = current();
-  copy_data(padre, t_TU, size((union task_union*) padre));
+  copy_data(padre, t_TU, sizeof(union task_union));
 
   struct task_struct TS_child = t_TU->task;
 
@@ -106,7 +106,7 @@ int sys_fork(void) {
   int pt_user_copy = pt_user[1].bits.pbase_addr;
   page_table_entry *pt_user_padre = (page_table_entry *) (pt_user_copy << 12);
   for (int i = 0; i < NUM_PAG_CODE; i++) {
-    PT_usC[NUM_PAG_DATA+i] = pt_user_padre[NUM_PAG_DATA+i];
+    TP_hijoU[NUM_PAG_DATA+i] = pt_user_padre[NUM_PAG_DATA+i];
   }
   //3.3. Buscar frames en donde mapear las páginas lógicas data+stack del 
   //proceso hijo. Si no hay páginas libres, retorna error.
@@ -126,7 +126,7 @@ int sys_fork(void) {
   }
    //3.4. Mapear estos frames a sus direcciones lógicas en la TP del hijo
   for (int i = 0; i < NUM_PAG_DATA; i++) {
-    set_ss_pag(PT_usC, i, frames_DS[i], 1);
+    set_ss_pag(TP_hijoU, i, frames_DS[i], 1);
   }
   //4. heredar el user data, las páginas de data+stack del padre deben ser copiadas
   //proceso hijo, por ende deben ser mapeadas temporalmente en espacio disponible
@@ -196,7 +196,8 @@ void sys_exit(void) {
   free_frame(pt_user_curr[1].bits.pbase_addr);
   //directorio y estructuras de sistema y de usuario
   free_frame(get_frame(pt_curr,0));
-  free_frame(get_frame(curr.list));
+  int frame_curr = ((unsigned long)curr) >> 12;
+  free_frame(frame_curr);
 
   //1.5 Quita el proceso de la lista del padre, mueve cualquier child vivo de 
   //proceso current a proceso idle (heredará a los niños) y actualiza la info
