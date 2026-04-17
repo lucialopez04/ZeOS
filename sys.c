@@ -63,7 +63,7 @@ int sys_fork(void) {
 
   //2. copia el task union del padre al hijo usando copy_data
   union task_union *padre = current();
-  copy_data(padre, t_TU, size(union task_union*));
+  copy_data(padre, t_TU, size((union task_union*) padre));
 
   struct task_struct TS_child = t_TU->task;
 
@@ -162,7 +162,8 @@ int sys_fork(void) {
   //encontrar. Similar a inicialización de idle, pero esta vez queremos recuperar 
   //todo el contenido que tenemos en pila, así que llamaremos a ret_from_fork (se
   //tiene que crear)
-  t_TU->stack[KERNEL_STACK_SIZE-1] = &(ret_from_fork());
+  t_TU->stack[KERNEL_STACK_SIZE-1] = (unsigned long) &ret_from_fork;
+
   t_TU->stack[KERNEL_STACK_SIZE-2] = 0;
   //que el k.esp apunte arriba de la pila que estamos preparando
   TS_child.k_esp = t_TU->stack[KERNEL_STACK_SIZE-2];
@@ -244,9 +245,13 @@ int sys_unblock(int pid) {
       break;
     }
   }
+
+
   if (child == NULL) return -1;
   //si proceso está bloqueado
-  if (child->state == ST_BLOCKED) {
+
+  struct task_struct *child_task =  list_head_to_task_struct(child);
+  if (child_task->state == ST_BLOCKED) {
     update_process_state_rr(child, &ready_queue);
   }
   else {

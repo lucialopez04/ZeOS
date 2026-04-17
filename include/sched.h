@@ -62,5 +62,11 @@ void task_switch(union task_union *new); // new is a pointer to the task_union o
 
 void inner_task_switch(union task_union *new);
 void update_memory_context(union task_union *new);
+void update_sched_data_rr();
+int needs_sched_rr();
+void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue);
 void schedule();
+void sched_next_rr();
+
+int ret_from_fork();
 #endif  /* __SCHED_H__ */

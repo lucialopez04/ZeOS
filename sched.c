@@ -66,7 +66,7 @@ void init_idle (void)
 	idle_union->stack[KERNEL_STACK_SIZE -4] = 0 ;
 	idle_union->stack[KERNEL_STACK_SIZE -5] = 0;
 
-	idle_union-> task.k_esp = (unsigned int *) &(idle_union->stack[KERNEL_STACK_SIZE-5]);
+	idle_union-> task.k_esp = (unsigned int ) &(idle_union->stack[KERNEL_STACK_SIZE-5]);
 	
 	//Inicializar la variable global init_task con el init PCB 
 	idle_task = (struct task_struct *) idle_union;
@@ -98,7 +98,7 @@ void init_task1(void)
 	// Alocatar un nuevo task_union
 	int init_union = alloc_frame();
 	union task_union *init_task_union = (union task_union *)  (init_union << 12);
-
+		
 	// Mapear PCB en la tabla de páginas de sistema 
 	set_ss_pag(TPSystem, init_union, init_union, 0); 
 	
@@ -169,11 +169,12 @@ void schedule(){
 	update_sched_data_rr();
 
 	if (needs_sched_rr()){
-	struct task_struct *curr = current();
-	if (curr->PID != 0){
+	union task_union *curr = current();
+	struct task_struct *curr_task = (struct task_struct *) curr;
+	if (curr_task->PID != 0){
 		
-		curr->ticks = 0;
-		update_process_state_rr(curr, &ready_queue);
+		curr_task->ticks = 0;
+		update_process_state_rr(curr_task, &ready_queue);
 	}
 
 }
@@ -183,19 +184,26 @@ void schedule(){
 
 }
 
-void update_sched_data_rr(void) {
+void update_sched_data_rr() {
     //Actualiza el número de ticks que el proceso ha ejecutado desde que
     //le asignaron la cpu
-	struct task_struct *curr = current();
-		--curr->ticks;
+	union task_union *curr = current();
+	struct task_struct *curr_task = (struct task_struct *) curr;
+		--curr_task->ticks;
 
 }
 
-int needs_sched_rr(void) {
+int needs_sched_rr() {
     //Retorna 1 si es necesario cambiar el proceso y 0 si no
-    struct task_struct *curr = current();
-    if ((curr->ticks <= 0 || curr->PID==0) && !list_empty(&ready_queue)) return 1;
-    else if (curr->ticks <= 0)curr->ticks = get_quantum(curr);
+		union task_union *curr_union = current();
+	struct task_struct *curr= (struct task_struct *) curr_union;
+
+	if (curr-> ticks <= 0 && curr->PID==0 && list_empty(&ready_queue)){ // si idle se ha de quedar en la CPU pero ya no le quedan ticks
+				curr->ticks = get_quantum(curr);
+		return 0;
+
+	}
+    if ((curr->ticks <= 0 || curr->PID ==0) && !list_empty(&ready_queue)) return 1; // Si no le quedan ticks (o es idle), la lista ready no está vacia
 	else return 0;
 }
 
@@ -206,7 +214,9 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
     //no hay necesidad de eliminarla de ninguna cola.
     //dst_queue es la nueva queue a que t se tiene que insertar
     //En el caso de que el nuevo estado está en running, dst_queue es NULL (?
-    struct task_struct *curr = current();
+			union task_union *curr_union = current();
+	struct task_struct *curr= (struct task_struct *) curr_union;
+
 	
 	if (&dst_queue == &ready_queue){
 				list_del(&curr->list);
@@ -231,6 +241,7 @@ void sched_next_rr(void) {
  		list_del(e);
 		struct task_struct *new = list_head_to_task_struct(e);
 		union task_union *new2 = (union task_union*) new;
+		update_process_state_rr(new, NULL);
 		task_switch(new2);
 	}
 }
