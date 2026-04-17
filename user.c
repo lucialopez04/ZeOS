@@ -18,5 +18,14 @@ int __attribute__ ((__section__(".text.main")))
   itoa(gettime(), buff2);
   write(1, buff2, strlen(buff2));
   write(1, "Hi hi", strlen("Hi hi"));
-  while(1) { }
+  
+
+  while(1) { 
+    write(1, "Proceso en CPU:", strlen("Proceso en CPU"));
+    itoa (getpid(), buff);
+    write(1, buff, strlen(buff));
+
+    for(int i = 0; i < 1000000; ++i);
+
+  }
 }

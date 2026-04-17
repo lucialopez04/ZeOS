@@ -24,6 +24,8 @@ struct task_struct {
   struct list_head childs;
   struct list_head anchor_child;
   struct task_struct *parent;
+  int ticks;
+  enum state_t state;
   //enum state_t estado_actual;
 };
 
@@ -60,4 +62,5 @@ void task_switch(union task_union *new); // new is a pointer to the task_union o
 
 void inner_task_switch(union task_union *new);
 void update_memory_context(union task_union *new);
+void schedule();
 #endif  /* __SCHED_H__ */

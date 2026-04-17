@@ -6,6 +6,7 @@
 #include <mm.h>
 #include <io.h>
 #include <hardware.h>
+#include <devices.h>
 
 struct list_head ready_queue;
 char initial_stack[KERNEL_STACK_SIZE]; // Space for the initial system stack
@@ -59,9 +60,13 @@ void init_idle (void)
 	// Inicializar el campo del directorio 
     idle_union->task.dir_pages_baseAddr = DirAddress;
 
-	unsigned long *stack_top = (unsigned long *)&(idle_union->stack[KERNEL_STACK_SIZE]);
-	exec_ctx_idle(stack_top, &(idle_union->task.k_esp));
+	idle_union->stack[KERNEL_STACK_SIZE -1] = (unsigned long) &cpu_idle;
+	idle_union->stack[KERNEL_STACK_SIZE -2] = 0 ;
+	idle_union->stack[KERNEL_STACK_SIZE -3] = 0 ;
+	idle_union->stack[KERNEL_STACK_SIZE -4] = 0 ;
+	idle_union->stack[KERNEL_STACK_SIZE -5] = 0;
 
+	idle_union-> task.k_esp = (unsigned int *) &(idle_union->stack[KERNEL_STACK_SIZE-5]);
 	
 	//Inicializar la variable global init_task con el init PCB 
 	idle_task = (struct task_struct *) idle_union;
@@ -74,15 +79,18 @@ void init_task1(void)
 	int Dir = alloc_frame();	// Alocatar el nuevo directorio
 	page_table_entry *DirAddress = (page_table_entry *)(Dir << 12);
 	clear_page_table(DirAddress); 	// inicializar todas las entradas del directorio
+
 	page_table_system = alloc_frame();		// Alocatar una tabla de páginas física para guardar los mapeos del sistema
 	page_table_entry *TPSystem = (page_table_entry *)(page_table_system << 12);
 	set_kernel_pages(TPSystem);	// Inicializar la tabla de pàginas del kernel
+
 	int page_table_user = alloc_frame();		// Alocatar una tabla de páginas física para guardar los mapeos del usuario
 	page_table_entry *TPUser = (page_table_entry *)(page_table_user << 12);
 	set_user_pages(TPUser);	// Inicializar la tabla de pàginas del usuario
+
 	set_ss_pag(TPSystem, Dir, Dir, 0); //Mapea el directorio 
 	set_ss_pag(TPSystem, page_table_system, page_table_system, 0); //Mapea la tabla de sistema 
-	set_ss_pag(TPSystem, page_table_user, page_table_user, 0); //Mapea la tabla de sistema 
+	set_ss_pag(TPSystem, page_table_user, page_table_user,1); //Mapea la tabla de sistema 
 	set_ss_pag(DirAddress, 0, page_table_system, 0); //Asigna a la primera entrada del directorio la tabla de sistema
 	set_ss_pag(DirAddress, 1, page_table_user, 3); //Asigna a la primera entrada del directorio la tabla de usuario
 
@@ -97,20 +105,16 @@ void init_task1(void)
 	// Asignar PID 1 al proceso
 	init_task_union->task.PID = 1;
 
-	// Actualizar el TSS para que apunte a la nueva pila de sistema de la tarea
-	writeMSR(0x175, init_task_union->stack);
 
 	// Inicializar el campo de la dirección del directorio en el union
     init_task_union->task.dir_pages_baseAddr = DirAddress;
-	char *base = (char*)&(init_task_union->task);
-	char *ptr_k_esp = (char*)&(init_task_union->task.k_esp);
-	int offset = (int) (ptr_k_esp - base);
-	if (offset != 16) while(1);
+
 
 
 //Preparación de la pila 
 	unsigned long *stack_top = (unsigned long *)&(init_task_union->stack[KERNEL_STACK_SIZE]);
-	exec_ctx_init(stack_top, &(init_task_union->task.k_esp));
+	// Actualizar el TSS para que apunte a la nueva pila de sistema de la tarea
+	writeMSR(0x175, stack_top);
 
 	// Hacer que el directorio sea current
 	set_cr3(DirAddress);
@@ -120,11 +124,18 @@ void init_task1(void)
 
 }
 
+void inner_task_switch(union task_union *new){
+	tss.esp0 = (unsigned long)&(new->stack[KERNEL_STACK_SIZE]);
+	set_cr3(new->task.dir_pages_baseAddr);
+
+
+}
+
 
 void init_sched()
 {
 	INIT_LIST_HEAD(&ready_queue);
-	INIT_LIST_HEAD(&blocked);
+	//INIT_LIST_HEAD(&blocked);
 }
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -147,25 +158,45 @@ void update_memory_context(union task_union *new){
 }
 
 int get_quantum(struct task_struct*t) {
-    return t.quantum;
+    return t->quantum;
 }
 
 void set_quantum(struct task_struct *t, int new_quantum) {
-    t.quantum = new_quantum;
+    t->quantum = new_quantum;
+}
+
+void schedule(){
+	update_sched_data_rr();
+
+	if (needs_sched_rr()){
+	struct task_struct *curr = current();
+	if (curr->PID != 0){
+		
+		curr->ticks = 0;
+		update_process_state_rr(curr, &ready_queue);
+	}
+
+}
+
+	sched_next_rr();
+
+
 }
 
 void update_sched_data_rr(void) {
     //Actualiza el número de ticks que el proceso ha ejecutado desde que
     //le asignaron la cpu
 	struct task_struct *curr = current();
+		--curr->ticks;
 
 }
 
 int needs_sched_rr(void) {
     //Retorna 1 si es necesario cambiar el proceso y 0 si no
-    struct task_struct *curr = &(current()->task);
-    if (curr->quantum == 0) return 1;
-    else return 0;
+    struct task_struct *curr = current();
+    if ((curr->ticks <= 0 || curr->PID==0) && !list_empty(&ready_queue)) return 1;
+    else if (curr->ticks <= 0)curr->ticks = get_quantum(curr);
+	else return 0;
 }
 
 void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue) {
@@ -175,17 +206,18 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
     //no hay necesidad de eliminarla de ninguna cola.
     //dst_queue es la nueva queue a que t se tiene que insertar
     //En el caso de que el nuevo estado está en running, dst_queue es NULL (?
-	struct list_head *currH = &(t->list);
-	if (dst_queue == NULL) {
-		t->estado_actual = ST_RUN;
+    struct task_struct *curr = current();
+	
+	if (&dst_queue == &ready_queue){
+				list_del(&curr->list);
+				list_add_tail(&(curr->list), dst_queue);
+				curr->state = ST_READY;
+
 	}
-	else if (t->estado_actual != ST_RUN) {
-		list_del(&currH);
-		if (dst_queue == &ready_queue) {
-			t->estado_actual = ST_READY;
-		}
-		else t->estado_actual = ST_BLOCKED;
-		list_add_tail(&(currH), &dst_queue);
+	else if (dst_queue == NULL){
+				list_del(&curr->list);
+				curr->state = ST_RUN;
+
 	}
 }
 
@@ -198,7 +230,7 @@ void sched_next_rr(void) {
  		// Remove the selected element from the list
  		list_del(e);
 		struct task_struct *new = list_head_to_task_struct(e);
-		struct task_union *new2 = (task_union*) (new);
+		union task_union *new2 = (union task_union*) new;
 		task_switch(new2);
 	}
 }
