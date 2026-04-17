@@ -65,7 +65,7 @@ int sys_fork(void) {
   union task_union *padre = current();
   copy_data(padre, t_TU, sizeof(union task_union));
 
-  struct task_struct TS_child = t_TU->task;
+  struct task_struct *TS_child = &(t_TU->task);
 
   //3. inicializa el espacio de direcciones del hijo
   //3.1. Obtener estructuras para guardar el espacio de direccion del hijo e
@@ -92,12 +92,12 @@ int sys_fork(void) {
   page_table_entry *sys_pt = get_PT(&padre->task);
 
   //guarda direcciones en PT del sistema (transformandolas de fisicas a logicas)
-  set_ss_pag(sys_pt, Directorio, Directorio, 0);
-  set_ss_pag(sys_pt, PT_usC, PT_usC, 0);
-  set_ss_pag(sys_pt, t_st, t_st, 0);
+  //set_ss_pag(sys_pt, Directorio, Directorio, 0);
+  //set_ss_pag(sys_pt, PT_usC, PT_usC, 0);
+  //set_ss_pag(sys_pt, t_st, t_st, 0);
 
   //Asigna direcciones lógicas en el directorio del hijo
-  set_ss_pag(DirDircc, 0, get_frame(sys_pt, 0), 0);
+  DirDircc[0] = get_DIR(padre)[0];
   set_ss_pag(DirDircc, 1, PT_usC, 1);
 
   //3.2. Código de usuario tiene que ser compartido con el padre
@@ -106,7 +106,7 @@ int sys_fork(void) {
   int pt_user_copy = pt_user[1].bits.pbase_addr;
   page_table_entry *pt_user_padre = (page_table_entry *) (pt_user_copy << 12);
   for (int i = 0; i < NUM_PAG_CODE; i++) {
-    TP_hijoU[NUM_PAG_DATA+i] = pt_user_padre[NUM_PAG_DATA+i];
+    TP_hijoU[PAG_LOG_INIT_CODE+i] = pt_user_padre[PAG_LOG_INIT_CODE+i];
   }
   //3.3. Buscar frames en donde mapear las páginas lógicas data+stack del 
   //proceso hijo. Si no hay páginas libres, retorna error.
@@ -120,7 +120,7 @@ int sys_fork(void) {
       }
       free_frame(t_st);
       free_frame(Directorio);
-      free_frame(TP_hijoU);
+      free_frame(PT_usC);
       return -ENOMEM;
     }
   }
@@ -136,6 +136,7 @@ int sys_fork(void) {
   for (int i = 0; i < NUM_PAG_DATA; i++) {
     set_ss_pag(pt_user_padre, tmp_page+i, frames_DS[i], 1);
   }
+  set_cr3(get_DIR(padre));
   //4.2. Copia páginas data+stack
   for (int i = 0; i < NUM_PAG_DATA; i++) {
     void *start = (void *) ((PAG_LOG_INIT_DATA+i) << 12);
@@ -151,8 +152,8 @@ int sys_fork(void) {
 
   //5.Inicializa los campos de task struct que no comparte con el padre
   //5.1. Asigna un nuevo PID al proceso
-  TS_child.PID = next_pid++;/*determinar número de PID para asignarle*/
-  TS_child.dir_pages_baseAddr = DirDircc;
+  TS_child->PID = next_pid++;/*determinar número de PID para asignarle*/
+  TS_child->dir_pages_baseAddr = DirDircc;
 
   //5.2. Prepara la pila del hijo para que la llamada task_switch en este PCB restaure
   //el proceso a ejecutar. Para restaurar la ejecución, tenemos que restaurar:
@@ -162,26 +163,30 @@ int sys_fork(void) {
   //encontrar. Similar a inicialización de idle, pero esta vez queremos recuperar 
   //todo el contenido que tenemos en pila, así que llamaremos a ret_from_fork (se
   //tiene que crear)
-  t_TU->stack[KERNEL_STACK_SIZE-1] = (unsigned long) &ret_from_fork;
+  t_TU->stack[KERNEL_STACK_SIZE - 10] = 0; 
 
-  t_TU->stack[KERNEL_STACK_SIZE-2] = 0;
-  //que el k.esp apunte arriba de la pila que estamos preparando
-  TS_child.k_esp = t_TU->stack[KERNEL_STACK_SIZE-2];
+  
+  t_TU->stack[KERNEL_STACK_SIZE - 17] = (unsigned long) &ret_from_fork; 
+  t_TU->stack[KERNEL_STACK_SIZE - 18] = 0; 
+  t_TU->stack[KERNEL_STACK_SIZE - 19] = 0; 
+  t_TU->stack[KERNEL_STACK_SIZE - 20] = 0; 
+  t_TU->stack[KERNEL_STACK_SIZE - 21] = 0; 
+
+  TS_child->k_esp = (unsigned long)&t_TU->stack[KERNEL_STACK_SIZE - 21];
   //5.3. Piensa en los registros no comunes con el proceso hijo y modifica su 
   //contenido en la pila de sistema para que cada uno reciba su valor cuando el 
   //contexto sea restaurado.
-  TS_child.quantum = 100;
-  TS_child.pending_unblocks = 0;
-  INIT_LIST_HEAD(&(TS_child.childs));
-  INIT_LIST_HEAD(&(TS_child.anchor_child));
-  TS_child.parent = &padre->task;
-  list_add_tail(&TS_child.list,&padre->task.childs);
+  TS_child->quantum = 100;
+  TS_child->pending_unblocks = 0;
+  INIT_LIST_HEAD(&(TS_child->childs));
+  INIT_LIST_HEAD(&(TS_child->anchor_child));
+  TS_child->parent = &padre->task;
+  list_add_tail(&TS_child->anchor_child,&padre->task.childs);
   //6. inserta nuevo proceso en readyqueue (para que sea luego usado por scheduler)
-  INIT_LIST_HEAD(&(TS_child.list));
-  list_add_tail(&(TS_child.list), &ready_queue);
-  TS_child.state = ST_READY;
+  list_add_tail(&(TS_child->list), &ready_queue);
+  TS_child->state = ST_READY;
   //7. retorna PID del proceso hijo
-  return TS_child.PID;  
+  return TS_child->PID;  
 }
 
 void sys_exit(void) {

@@ -18,7 +18,7 @@ int __attribute__ ((__section__(".text.main")))
   itoa(gettime(), buff2);
   write(1, buff2, strlen(buff2));
   write(1, "Hi hi", strlen("Hi hi"));
-  
+  int a = fork();
 
   while(1) { 
     write(1, "Proceso en CPU:", strlen("Proceso en CPU"));
