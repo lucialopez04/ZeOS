@@ -13,10 +13,14 @@
 
 #include <sched.h>
 #include <system.h>
+#include <errno.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
 static char buffer_sistema[1024];
+static int next_pid = 2;
+extern struct list_head ready_queue;
+extern struct list_head blocked;
 int check_fd(int fd, int permissions)
 {
   if (fd!=1) return -9; /*EBADF*/
@@ -59,7 +63,7 @@ int sys_fork(void) {
 
   //2. copia el task union del padre al hijo usando copy_data
   union task_union *padre = current();
-  copy_data(padre, t_TU, size(union task_union));
+  copy_data(padre, t_TU, size(union task_union*));
 
   struct task_struct TS_child = t_TU->task;
 
@@ -80,7 +84,7 @@ int sys_fork(void) {
     free_frame(Directorio);
     return ENOMEM;
   }
-  page_table_entry *TP_hijoU = (page_table_entry *)(PT_user << 12);
+  page_table_entry *TP_hijoU = (page_table_entry *)(PT_usC << 12);
   clear_page_table(TP_hijoU);
 
   //obtienes el directorio del proceso padre
@@ -93,25 +97,25 @@ int sys_fork(void) {
   set_ss_pag(sys_pt, t_st, t_st, 0);
 
   //Asigna direcciones lógicas en el directorio del hijo
-  set_ss_pag(DirDircc, 0, dir_frame_copy, 0);
-  set_ss_pag(DirDircc, 1, sysC, 3);
+  set_ss_pag(DirDircc, 0, get_frame(sys_pt, 0), 0);
+  set_ss_pag(DirDircc, 1, PT_usC, 1);
 
   //3.2. Código de usuario tiene que ser compartido con el padre
   //obtienes la PT entry del user directamente
   page_table_entry *pt_user = get_DIR(&padre->task);
   int pt_user_copy = pt_user[1].bits.pbase_addr;
   page_table_entry *pt_user_padre = (page_table_entry *) (pt_user_copy << 12);
-  for (int i = 0; i < NUM_PAG_CODE; ++i) {
-    PT_usC[PAG_LOG_INIT_CODE +i] = pt_user_padre[PAG_LOG_INIT_CODE+i];
+  for (int i = 0; i < NUM_PAG_CODE; i++) {
+    PT_usC[NUM_PAG_DATA+i] = pt_user_padre[NUM_PAG_DATA+i];
   }
   //3.3. Buscar frames en donde mapear las páginas lógicas data+stack del 
   //proceso hijo. Si no hay páginas libres, retorna error.
 
   int frames_DS[NUM_PAG_DATA];
-  for(int i = 0, i < NUM_PAG_DATA; ++i) {
+  for(int i = 0; i < NUM_PAG_DATA; i++) {
     frames_DS[i] = alloc_frame();
     if (frames_DS[i] < 0) {
-      for (int j = 0; j < pag; ++j) {
+      for (int j = 0; j < i; j++) {
         free_frame(frames_DS[j]);
       }
       free_frame(t_st);
@@ -121,19 +125,19 @@ int sys_fork(void) {
     }
   }
    //3.4. Mapear estos frames a sus direcciones lógicas en la TP del hijo
-  for (int i = 0; i < NUM_PAG_DATA; ++i) {
-    set_ss_pag(PT_usC, PAG_LOG_INIT_DATA+i, frames_DS[i], )
+  for (int i = 0; i < NUM_PAG_DATA; i++) {
+    set_ss_pag(PT_usC, i, frames_DS[i], 1);
   }
   //4. heredar el user data, las páginas de data+stack del padre deben ser copiadas
   //proceso hijo, por ende deben ser mapeadas temporalmente en espacio disponible
   //de la pila del padre 
   //4.1. Usa entradas temporales libres en la TP del padre (set_ss_pag, del_ss_pag)
   int tmp_page = PAG_LOG_INIT_CODE+NUM_PAG_CODE;
-  for (int i = 0; i < NUM_PAG_DATA; ++i) {
+  for (int i = 0; i < NUM_PAG_DATA; i++) {
     set_ss_pag(pt_user_padre, tmp_page+i, frames_DS[i], 1);
   }
   //4.2. Copia páginas data+stack
-  for (int i = 0; i < NUM_PAG_DATA; ++i) {
+  for (int i = 0; i < NUM_PAG_DATA; i++) {
     void *start = (void *) ((PAG_LOG_INIT_DATA+i) << 12);
     void *end = (void *) ((tmp_page+i) << 12);
     copy_data(start, end, PAGE_SIZE);
@@ -143,7 +147,7 @@ int sys_fork(void) {
   //4.3. Quita las entradas temporales en la TP y flush de TLB para deshabilitar
   //el proceso padre de acceder a páginas del hijo
 
-  set_cr3(Dir_padre);
+  set_cr3(get_DIR(padre));
 
   //5.Inicializa los campos de task struct que no comparte con el padre
   //5.1. Asigna un nuevo PID al proceso
@@ -158,20 +162,23 @@ int sys_fork(void) {
   //encontrar. Similar a inicialización de idle, pero esta vez queremos recuperar 
   //todo el contenido que tenemos en pila, así que llamaremos a ret_from_fork (se
   //tiene que crear)
-  t_TU->stack[KERNEL_STACK_SIZE-1] = &(ret_from_fork);
+  t_TU->stack[KERNEL_STACK_SIZE-1] = &(ret_from_fork());
   t_TU->stack[KERNEL_STACK_SIZE-2] = 0;
   //que el k.esp apunte arriba de la pila que estamos preparando
-
+  TS_child.k_esp = t_TU->stack[KERNEL_STACK_SIZE-2];
   //5.3. Piensa en los registros no comunes con el proceso hijo y modifica su 
   //contenido en la pila de sistema para que cada uno reciba su valor cuando el 
   //contexto sea restaurado.
-  TS_child->quantum = ;
-  TS_child->pending_unblocks = 0;
-  
+  TS_child.quantum = 100;
+  TS_child.pending_unblocks = 0;
+  INIT_LIST_HEAD(&(TS_child.childs));
+  INIT_LIST_HEAD(&(TS_child.anchor_child));
+  TS_child.parent = &padre->task;
+  list_add_tail(&TS_child.list,&padre->task.childs);
   //6. inserta nuevo proceso en readyqueue (para que sea luego usado por scheduler)
   INIT_LIST_HEAD(&(TS_child.list));
   list_add_tail(&(TS_child.list), &ready_queue);
-  TS_child.estado_actual = ST_READY;
+  TS_child.state = ST_READY;
   //7. retorna PID del proceso hijo
   return TS_child.PID;  
 }
@@ -179,16 +186,16 @@ int sys_fork(void) {
 void sys_exit(void) {
   //1. Libera las estructuras de datos y los recursos del proceso 
   //(memoria física, task_struct y así). Usa free_frame para las páginas físicas
-  struct task_struct curr = current();
+  struct task_struct *curr = current();
   page_table_entry *pt_curr = get_DIR(curr);
   int pt_curr_copy = pt_curr[1].bits.pbase_addr;
-  page_table_entry *pt_user_curr = (page_table_entry *) (pt_curr_copy << 12);
+  page_table_entry *pt_user_curr = (page_table_entry *) (pt_curr_copy >> 12);
   free_user_pages(pt_user_curr);
   //liberar tabla de usuario
   free_frame(pt_user_curr[1].bits.pbase_addr);
   //directorio y estructuras de sistema y de usuario
-  free_frame(((unsigned int) pt_curr) >> 12);
-  free_frame(((unsigned int) curr) >> 12);
+  free_frame(get_frame(pt_curr,0));
+  free_frame(get_frame(curr.list));
 
   //1.5 Quita el proceso de la lista del padre, mueve cualquier child vivo de 
   //proceso current a proceso idle (heredará a los niños) y actualiza la info
@@ -239,7 +246,7 @@ int sys_unblock(int pid) {
   }
   if (child == NULL) return -1;
   //si proceso está bloqueado
-  if (child->estado_actual == ST_BLOCKED) {
+  if (child->state == ST_BLOCKED) {
     update_process_state_rr(child, &ready_queue);
   }
   else {

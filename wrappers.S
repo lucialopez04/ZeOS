@@ -143,6 +143,8 @@ ENTRY(unblock)
     movl %esp, %ebp
     movl $7, %eax          /* identificador de unblock */
     /*falta introducir el parámetro*/
+    pushl %ebx 
+    movl 8(%ebp), %ebx
     pushl %ecx
     pushl %edx
     pushl $return_address_unblock
@@ -155,7 +157,7 @@ return_address_unblock:
     addl $4, %esp
     popl %edx
     popl %ecx
-
+    popl %ebx
     /* Procesar resultado: si negativo -> errno = -resultado, retorna -1 */
     cmpl $0, %eax
     jge unbl_ok
