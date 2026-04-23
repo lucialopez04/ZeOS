@@ -219,14 +219,14 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
 
 	
 	if (&dst_queue == &ready_queue){
-				list_del(&curr->list);
-				list_add_tail(&(curr->list), dst_queue);
-				curr->state = ST_READY;
+				list_del(&t->list);
+				list_add_tail(&(t->list), dst_queue);
+				t->state = ST_READY;
 
 	}
 	else if (dst_queue == NULL){
-				list_del(&curr->list);
-				curr->state = ST_RUN;
+				list_del(&t->list);
+				t->state = ST_RUN;
 
 	}
 }
