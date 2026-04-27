@@ -135,7 +135,7 @@ void inner_task_switch(union task_union *new){
 void init_sched()
 {
 	INIT_LIST_HEAD(&ready_queue);
-	//INIT_LIST_HEAD(&blocked);
+	INIT_LIST_HEAD(&blocked);
 }
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -169,19 +169,15 @@ void schedule(){
 	update_sched_data_rr();
 
 	if (needs_sched_rr()){
-	union task_union *curr = current();
-	struct task_struct *curr_task = (struct task_struct *) curr;
-	if (curr_task->PID != 0){
-		
-		curr_task->ticks = 0;
-		update_process_state_rr(curr_task, &ready_queue);
+		union task_union *curr = current();
+		struct task_struct *curr_task = (struct task_struct *) curr;
+		if (curr_task->PID != 0){
+			
+			curr_task->ticks = get_quantum(curr_task);
+			update_process_state_rr(curr_task, &ready_queue);
+		}
+		sched_next_rr();
 	}
-
-}
-
-	sched_next_rr();
-
-
 }
 
 void update_sched_data_rr() {
@@ -218,7 +214,7 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
 	struct task_struct *curr= (struct task_struct *) curr_union;
 
 	
-	if (&dst_queue == &ready_queue){
+	if (dst_queue == &ready_queue){
 				list_del(&t->list);
 				list_add_tail(&(t->list), dst_queue);
 				t->state = ST_READY;
@@ -235,13 +231,17 @@ void sched_next_rr(void) {
     //Selecciona el siguiente proceso a ejecutar, lo extrae de ready queue e
     //invoca el cambio de contexto (task switch), esta función se debe ejecutar
     //después de actualizar el estado del proceso actual (update_process_state_rr)
-	if (needs_sched_rr()) {
-		struct list_head * e = list_first(&ready_queue);
- 		// Remove the selected element from the list
- 		list_del(e);
-		struct task_struct *new = list_head_to_task_struct(e);
-		union task_union *new2 = (union task_union*) new;
-		update_process_state_rr(new, NULL);
-		task_switch(new2);
-	}
+	union task_union *new_process;
+
+    if (list_empty(&ready_queue)) {
+        // No hay procesos listos: ejecutar idle.
+        new_process = (union task_union *) idle_task;
+    } else {
+        struct list_head *e = list_first(&ready_queue);
+        list_del(e);
+        struct task_struct *new_t = list_head_to_task_struct(e);
+        new_process = (union task_union *) new_t;
+        update_process_state_rr(new_t, NULL);   // Pasa a ST_RUN
+    }
+    task_switch(new_process);
 }
