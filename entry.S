@@ -48,7 +48,9 @@
       pushl %ebx; \
       pushl %ecx; \
       pushl %edx; \
-
+      movl $__KERNEL_DS, %edx;    \
+      movl %edx, %ds;           \
+      movl %edx, %es
 
 #define RESTORE_ALL \
       popl %edx; \
@@ -61,10 +63,8 @@
       popl %ds; \
       popl %es; \
       popl %fs; \
-      popl %gs; \
-      movl $__USER_DS, %edx;    \
-      movl %edx,%ds;           \
-      movl %edx, %es;
+      popl %gs; 
+
       
       
 
