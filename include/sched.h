@@ -68,5 +68,5 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
 void schedule();
 void sched_next_rr();
 
-int ret_from_fork();
+void ret_from_fork();
 #endif  /* __SCHED_H__ */

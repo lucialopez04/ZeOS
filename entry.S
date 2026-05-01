@@ -143,4 +143,8 @@ ENTRY(task_switch)
       popl %ebp
       ret
 
+ENTRY(ret_from_fork)
+     jmp sysenter_fin
+
+
 

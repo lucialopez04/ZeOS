@@ -168,14 +168,14 @@ int sys_fork(void) {
   //encontrar. Similar a inicialización de idle, pero esta vez queremos recuperar 
   //todo el contenido que tenemos en pila, así que llamaremos a ret_from_fork (se
   //tiene que crear)
-  t_TU->stack[KERNEL_STACK_SIZE - 10] = 0; 
+    t_TU->stack[KERNEL_STACK_SIZE - 10] = 0; 
 
-  
   t_TU->stack[KERNEL_STACK_SIZE - 17] = (unsigned long) &ret_from_fork; 
   t_TU->stack[KERNEL_STACK_SIZE - 18] = 0; 
-  t_TU->stack[KERNEL_STACK_SIZE - 19] = 0; 
+    t_TU->stack[KERNEL_STACK_SIZE - 19] = 0; 
   t_TU->stack[KERNEL_STACK_SIZE - 20] = 0; 
   t_TU->stack[KERNEL_STACK_SIZE - 21] = 0; 
+
 
   TS_child->k_esp = (unsigned long)&t_TU->stack[KERNEL_STACK_SIZE - 21];
 
@@ -221,9 +221,6 @@ void sys_exit(void) {
   sched_next_rr();
 }
 
-int ret_from_fork() {
-  return 0;
-}
 
 void sys_block(void) {
     //bloqueará el proceso curret si no hay desbloqueos pendientes. Para bloquear
