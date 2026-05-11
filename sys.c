@@ -49,6 +49,33 @@ int sys_write(int fd, char * buffer, int size) {
   return size_cons;
 
 }
+//**
+// it allows a user process to obtain maxchars keys pressed and store it in b. 
+// This is a blocking function, it will return the number of chars that
+// have been read (0 if none).
+// The keyboard device suport implementation has to store
+// the keystrokes in a circular buffer
+// Modificar la interrupcion de teclado para que
+// a la espera de que el usuario ponga la tecla
+// estas teclas k se van leyendo se van metiendo en el buffer de usuario.
+//  entender casuistica- si proc bloqueado directamente se ponen al buffer de ese proceso
+//  i si no al buffer circuylar
+// esta es la primera llamada al sistema. 
+// añadir lista proc bloqueados. despues condicional hasta max clars i eso.
+// 
+// **/
+extern struct circular_buffer *buf_circ;
+int sys_read(char *b, int maxchars){
+  if (access_ok(VERIFY_WRITE, b, maxchars) != 1) return -14; /*EFAULT*/
+
+  int leidas = 0;
+  char c;
+  while (leidas < maxchars && (c = CIRCULAR_BUFFER_READ(buf_circ)) != '\0') {
+    b[leidas] = c;
+    leidas++;
+  }
+  return leidas;
+}
 
 int sys_getpid(void) {
   union task_union *result = current();

@@ -7,11 +7,14 @@
 #include <io.h>
 #include <hardware.h>
 #include <devices.h>
+#include <circular_buffer.h>
 
 struct list_head ready_queue;
 char initial_stack[KERNEL_STACK_SIZE]; // Space for the initial system stack
 struct task_struct *init_task;
 struct task_struct *idle_task;
+struct circular_buffer *buf_circ;
+
 
 int page_table_system;	// Alocatar una tabla de páginas física para guardar los mapeos del sistema
 
@@ -46,8 +49,7 @@ void init_idle (void)
 	set_ss_pag(TPSystem, page_table_system, page_table_system, 0); //Mapea la tabla de sistema 
 	set_ss_pag(DirAddress, 0, page_table_system, 0); //Asigna a la primera entrada del directorio la tabla de sistema
 
-
-		// Alocatar un nuevo task_union
+	// Alocatar un nuevo task_union
 	int idle_task_union = alloc_frame();
 	union task_union *idle_union = (union task_union *)  (idle_task_union << 12);
 
@@ -98,7 +100,11 @@ void init_task1(void)
 	// Alocatar un nuevo task_union
 	int init_union = alloc_frame();
 	union task_union *init_task_union = (union task_union *)  (init_union << 12);
-		
+	
+	INIT_CIRCULAR_BUFFER(buf_circ );
+
+	set_ss_pag(TPUser, buf_circ, buf_circ, 3); // Mapear el buffer circular en la tabla de páginas de usuario del proceso
+	
 	// Mapear PCB en la tabla de páginas de sistema 
 	set_ss_pag(TPSystem, init_union, init_union, 0); 
 	

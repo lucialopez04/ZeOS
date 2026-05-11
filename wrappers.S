@@ -34,6 +34,36 @@ write_fin:
     popl %ebp
     ret
 
+ENTRY(read)
+    pushl %ebp
+    movl %esp, %ebp
+    pushl %ecx
+    pushl %edx
+    movl 8(%ebp), %edx
+    movl 12(%ebp), %ecx
+    movl $11, %eax 
+    pushl $return_address_read
+    pushl %ebp
+    movl %esp, %ebp
+    sysenter
+
+return_address_read:
+    popl %ebp
+    addl $4, %esp
+    popl %edx
+    popl %ecx
+    
+    cmpl $0, %eax
+    jge read_fin
+    neg %eax
+    movl %eax, errno 
+    movl $-1, %eax 
+
+read_fin:
+    popl %ebp
+    ret
+
+
 ENTRY(gettime)
     pushl %ebp
     movl %esp, %ebp

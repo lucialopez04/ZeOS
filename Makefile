@@ -33,6 +33,7 @@ SYSOBJ = \
 	devices.o \
 	utils.o \
 	list.o \
+	circular_buffer.o \
 	msr.o \
 	hardware.o \
 

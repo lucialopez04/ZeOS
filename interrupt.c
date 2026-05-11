@@ -7,6 +7,7 @@
 #include <hardware.h>
 #include <io.h>
 #include <sched.h>
+#include <circular_buffer.h>
 
 
 #include <zeos_interrupt.h>
@@ -29,7 +30,7 @@ char char_map[] =
   '\0','\0','\0','\0','\0','\0','\0','\0',
   '\0','\0'
 };
-
+extern struct circular_buffer *buf_circ;
 void keyboard_routine() {
     unsigned char port = inb(0x60);
     unsigned char breaking = port & 0x80;
@@ -38,31 +39,21 @@ void keyboard_routine() {
       unsigned char key = port & 0x7F;
       if (key < sizeof(char_map)) {
         char map_key = char_map[key];
-        printc_xy(78, 24,map_key);
-        if (map_key =='p'){
-            if(current()->task.PID == 0){
-    task_switch((union task_union *)init_task);
-    printk("init_task\n");
-
-  }
-  else{
-    task_switch((union task_union *)idle_task);
-    printk("idle_task\n");
-  } 
-
-        }
+        CIRCULAR_BUFFER_ADD(buf_circ, map_key);
       }
-      else printc_xy(78,24,'C');
+      else CIRCULAR_BUFFER_ADD(buf_circ, 'C');
+      }
     }
-}
+
+
 int zeos_ticks = 0;
 void clock_routine() {
   ++zeos_ticks;
     zeos_show_clock();
     schedule();
 
-
 }
+
 void clock_handler();
 void pagefault_handler();
 void keyboard_handler();

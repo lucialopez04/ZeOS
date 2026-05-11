@@ -18,12 +18,17 @@ int __attribute__ ((__section__(".text.main")))
   itoa(gettime(), buff2);
   write(1, buff2, strlen(buff2));
   write(1, "Hi hi", strlen("Hi hi"));
-  int a = fork();
+  //int a = fork();
 
   while(1) { 
-    write(1, "Proceso en CPU:", strlen("Proceso en CPU"));
-    itoa (getpid(), buff);
-    write(1, buff, strlen(buff));
+    for(int i = 0; i < 99999991; ++i);
+
+  write(1, "\nHelloo!\n", strlen("\nHelloo!\n")); 
+    char buff3[5];
+    int hola = read(buff3, 4);
+    write(1, buff3, strlen(buff3));
+ //   itoa (getpid(), buff);
+   // write(1, buff, strlen(buff));
 
     for(int i = 0; i < 1000000; ++i);
 
