@@ -17,7 +17,7 @@ int first_kernel;
 int last_kernel;
 
 /* Bytemap to mark the free physical pages */
-Byte phys_mem[TOTAL_PAGES];
+Byte phys_mem[TOTAL_PAGES_PHYS];
 #define FREE_FRAME 0
 #define USED_FRAME 1
 
@@ -37,11 +37,21 @@ extern char* itoa(int, char*);
 /************** PAGING MANAGEMENT **************/
 /***********************************************/
 
+int physical_to_logical(page_table_entry *PT, int physical_page) // funció afegida
+{
+  for (int i=0; i<TOTAL_PAGES_LOG; i++) {
+    if(physical_page == PT[i].bits.pbase_addr && PT[i].bits.present) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 /* Initializes the page table */
 void clear_page_table(page_table_entry* process_PT)
 {
   int i;
-  for (i=0; i<TOTAL_PAGES; i++) {
+  for (i=0; i<TOTAL_PAGES_LOG; i++) {
     process_PT[i].entry = 0;
   }
 }
@@ -167,7 +177,7 @@ int init_frames( void )
 {
     int i;
     /* Mark pages as Free */
-    for (i=0; i<TOTAL_PAGES; i++) {
+    for (i=0; i<TOTAL_PAGES_PHYS; i++) {
         phys_mem[i] = FREE_FRAME;
     }
     // Manually reserve kernel frames...
@@ -189,7 +199,7 @@ int init_frames( void )
 int alloc_frame( void )
 {
     int i;
-    for (i=last_kernel; i<TOTAL_PAGES; i++) {
+    for (i=last_kernel; i<TOTAL_PAGES_PHYS; i++) {
         if (phys_mem[i] == FREE_FRAME) {
             phys_mem[i] = USED_FRAME;
             return i;
@@ -213,12 +223,12 @@ void free_user_pages( page_table_entry* process_PT )
 /* free_frame - Mark as FREE_FRAME the frame  'frame'.*/
 void free_frame( unsigned int frame )
 {
-    if (frame<TOTAL_PAGES)
+    if (frame<TOTAL_PAGES_PHYS)
       phys_mem[frame]=FREE_FRAME;
 }
 
 /* set_ss_pag - Associates logical page 'page' with physical page 'frame' and 'user' access enabled/disabled */
-void set_ss_pag(page_table_entry *PT, unsigned page,unsigned frame, int user)
+void set_ss_pag(page_table_entry *PT, unsigned page, unsigned frame, int user)
 {
 	PT[page].entry=0;
 	PT[page].bits.pbase_addr=frame;
