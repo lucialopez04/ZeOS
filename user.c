@@ -11,24 +11,26 @@ int __attribute__ ((__section__(".text.main")))
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
 
   
-  //char* p = 0;
-  //*p = 'x';
-  write(1, "\nHello world!\n", strlen("\nHello world!\n")); 
-  char buff2[16];
-  itoa(gettime(), buff2);
-  write(1, buff2, strlen(buff2));
-  write(1, "Hi hi", strlen("Hi hi"));
-  //int a = fork();
+  write(1, "\nJuego de pruebas\n", strlen("\nJuego de pruebas\n")); 
 
   while(1) { 
+    write(1, "\n Lo que escribas se guardará en el buffer circular!\n", strlen("\n Lo que escribas se guardará en el buffer circular!\n"));
+
     for(int i = 0; i < 99999991; ++i);
 
-  write(1, "\nHelloo!\n", strlen("\nHelloo!\n")); 
+    write(1, "\n Los ultimos 4 caracteres que has escrito son:\n", strlen("\n Los ultimos 4 caracteres que has escrito son:\n"));
+
     char buff3[5];
-    int hola = read(buff3, 4);
-    write(1, buff3, strlen(buff3));
- //   itoa (getpid(), buff);
-   // write(1, buff, strlen(buff));
+    int caracteres = read(buff3, 4);
+    if(caracteres < 4) {
+      write(1, "\n No has escrito 4 caracteres, se mostrarán los que hayas escrito\n", strlen("\n No has escrito 4 caracteres, se mostrarán los que hayas escrito\n"));
+      write(1, buff3, strlen(buff3));
+
+    }
+    else{
+          write(1, buff3, strlen(buff3));
+
+    }
 
     for(int i = 0; i < 1000000; ++i);
 

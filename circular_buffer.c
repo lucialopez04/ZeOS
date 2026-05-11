@@ -68,4 +68,5 @@ void CIRCULAR_BUFFER_CLEAR(struct circular_buffer *buf) {
     buf->head = 0;
     buf->tail = 0;
     buf->full = 0;
+    buf->size = 0;
 }
