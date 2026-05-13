@@ -8,7 +8,6 @@
 void INIT_CIRCULAR_BUFFER(struct circular_buffer *buf) {
     buf->head = 0;
     buf->tail = 0;
-    buf->size = 0;
     buf->buffer = (char *) alloc_frame();
     buf->full = 0;
 }
@@ -20,11 +19,12 @@ void INIT_CIRCULAR_BUFFER(struct circular_buffer *buf) {
 
  */
 void CIRCULAR_BUFFER_ADD(struct circular_buffer *buf, char c) {
+    if(CIRCULAR_BUFFER_IS_FULL(buf)) return;
     buf->buffer[buf->head] = c;
-    buf->head = (buf->head + 1) % 1024;
-    if (buf->full) {
-        buf->tail = (buf->tail + 1) % 1024; 
-    }
+    buf->head = (buf->head + 1) % CIRCULAR_BUFFER_SIZE;
+   // if (buf->full) {
+   //     buf->tail = (buf->tail + 1) % CIRCULAR_BUFFER_SIZE; 
+  //  }
     buf->full = (buf->head == buf->tail); 
 }
 //**
@@ -37,10 +37,12 @@ char CIRCULAR_BUFFER_READ(struct circular_buffer *buf) {
         return '\0'; // Return null character if buffer is empty
     }
     char c = buf->buffer[buf->tail];
-    buf->tail = (buf->tail + 1) % 1024;
-    buf->full = 0; // Once we read an element, the buffer can't be full
+    buf->tail = (buf->tail + 1) % CIRCULAR_BUFFER_SIZE;
+   // buf->full = 0; // Once we read an element, the buffer can't be full
     return c;
 }
+
+
 
 /**
  * CIRCULAR_BUFFER_IS_FULL - check if the circular buffer is full
@@ -68,5 +70,17 @@ void CIRCULAR_BUFFER_CLEAR(struct circular_buffer *buf) {
     buf->head = 0;
     buf->tail = 0;
     buf->full = 0;
-    buf->size = 0;
+}
+
+char* CIRCULAR_BUFFER_DUMP(struct circular_buffer *buf) {
+    static char dump[CIRCULAR_BUFFER_SIZE + 1];
+    int i = 0;
+    int index = buf->tail;
+    while (index != buf->head || (i == 0 && buf->full)) {
+        dump[i] = buf->buffer[index];
+        index = (index + 1) % CIRCULAR_BUFFER_SIZE;
+        i++;
+    }
+    dump[i] = '\0'; // Null-terminate the string
+    return dump;
 }

@@ -9,5 +9,6 @@
 
 int gettime();
 int write(int fd, char *buffer, int size);
+int read(char *buffer, int maxchars);
 
 #endif  /* __INTERRUPT_H__ */

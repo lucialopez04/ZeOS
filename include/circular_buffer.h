@@ -1,12 +1,13 @@
 #ifndef _LINUX_CIRCULAR_BUFFER_H
 #define _LINUX_CIRCULAR_BUFFER_H
 
+#define CIRCULAR_BUFFER_SIZE 4
+
 struct circular_buffer {
 	char *buffer;
-	int size;
 	int head; // índex del següent byte a escriure
 	int tail; // índex del següent byte a llegir
-        int full; // indicador de si el buffer està ple
+    int full; // indicador de si el buffer està ple
 };
 /*
  * Implementació d'un buffer circular de caràcters, basat en la implementació 
@@ -77,6 +78,8 @@ int CIRCULAR_BUFFER_IS_EMPTY(struct circular_buffer *buf);
  * @buf: circular buffer to clear
  */
 void CIRCULAR_BUFFER_CLEAR(struct circular_buffer *buf);
+
+char* CIRCULAR_BUFFER_DUMP(struct circular_buffer *buf);
 
 #endif /* _LINUX_CIRCULAR_BUFFER_H */
 
