@@ -8,11 +8,14 @@
 #include <io.h>
 #include <sched.h>
 #include <circular_buffer.h>
+#include <semaforo.h>
 
 
 #include <zeos_interrupt.h>
 Gate idt[IDT_ENTRIES];
 Register    idtR;
+struct sem_t sem_teclado;
+
 
 char char_map[] =
 {
@@ -43,7 +46,7 @@ void keyboard_routine() {
       }
       else CIRCULAR_BUFFER_ADD(buf_circ, 'C');
       }
-    }
+}
 
 
 int zeos_ticks = 0;
@@ -51,6 +54,12 @@ void clock_routine() {
   ++zeos_ticks;
     zeos_show_clock();
     schedule();
+
+}
+
+void init_teclado(){
+
+sem_init(&sem_teclado, 0); // semaforo de teclado, de sincronización
 
 }
 
@@ -173,5 +182,6 @@ void setIdt()
   writeMSR(0x176, syscall_handler_sysenter);
 
   set_idt_reg(&idtR);
+
 }
 

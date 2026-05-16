@@ -1,4 +1,6 @@
 #include <circular_buffer.h>
+#include <semaforo.h>
+#include <interrupt.h>
 #include <mm.h>
 
 /**
@@ -8,7 +10,6 @@
 void INIT_CIRCULAR_BUFFER(struct circular_buffer *buf) {
     buf->head = 0;
     buf->tail = 0;
-    buf->buffer = (char *) alloc_frame();
     buf->full = 0;
 }
 
@@ -18,6 +19,7 @@ void INIT_CIRCULAR_BUFFER(struct circular_buffer *buf) {
     * @c: element to be added
 
  */
+extern struct sem_t sem_teclado;
 void CIRCULAR_BUFFER_ADD(struct circular_buffer *buf, char c) {
     if(CIRCULAR_BUFFER_IS_FULL(buf)) return;
     buf->buffer[buf->head] = c;
@@ -26,16 +28,18 @@ void CIRCULAR_BUFFER_ADD(struct circular_buffer *buf, char c) {
    //     buf->tail = (buf->tail + 1) % CIRCULAR_BUFFER_SIZE; 
   //  }
     buf->full = (buf->head == buf->tail); 
+    sem_post(&sem_teclado);
+
 }
 //**
 // CIRCULAR_BUFFER_READ - read an element from the circular buffer
 // @buf: circular buffer to read the element from
 // Return: the element read from the circular buffer
 // */
+
+extern struct sem_t sem_teclado;
 char CIRCULAR_BUFFER_READ(struct circular_buffer *buf) {
-    if (CIRCULAR_BUFFER_IS_EMPTY(buf)) {
-        return '\0'; // Return null character if buffer is empty
-    }
+        sem_wait(&sem_teclado);
     char c = buf->buffer[buf->tail];
     buf->tail = (buf->tail + 1) % CIRCULAR_BUFFER_SIZE;
    // buf->full = 0; // Once we read an element, the buffer can't be full

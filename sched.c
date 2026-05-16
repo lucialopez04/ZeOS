@@ -9,11 +9,12 @@
 #include <devices.h>
 #include <circular_buffer.h>
 
+
 struct list_head ready_queue;
 char initial_stack[KERNEL_STACK_SIZE]; // Space for the initial system stack
 struct task_struct *init_task;
 struct task_struct *idle_task;
-struct circular_buffer *buf_circ;
+struct circular_buffer *buf_circ; // Buffer circular para almacenar las teclas pulsadas
 
 
 int page_table_system;	// Alocatar una tabla de páginas física para guardar los mapeos del sistema
@@ -61,6 +62,7 @@ void init_idle (void)
 	// tss ha de apuntar a current? y k el directorio sea current?
 	// Inicializar el campo del directorio 
     idle_union->task.dir_pages_baseAddr = DirAddress;
+	unsigned long *stack_top = (unsigned long *)&(idle_union->stack[KERNEL_STACK_SIZE]);
 
 	idle_union->stack[KERNEL_STACK_SIZE -1] = (unsigned long) &cpu_idle;
 	idle_union->stack[KERNEL_STACK_SIZE -2] = 0 ;
@@ -68,13 +70,11 @@ void init_idle (void)
 	idle_union->stack[KERNEL_STACK_SIZE -4] = 0 ;
 	idle_union->stack[KERNEL_STACK_SIZE -5] = 0;
 
-	idle_union-> task.k_esp = (unsigned int ) &(idle_union->stack[KERNEL_STACK_SIZE-5]);
-	
+	idle_union->task.k_esp = (unsigned long) &(idle_union->stack[KERNEL_STACK_SIZE-5]);
 	//Inicializar la variable global init_task con el init PCB 
 	idle_task = (struct task_struct *) idle_union;
 
 }
-
 void init_task1(void)
 {
 	// Alocatar estructuras para guardar el espacio de direcciones del proceso
@@ -94,22 +94,26 @@ void init_task1(void)
 	set_ss_pag(TPSystem, page_table_system, page_table_system, 0); //Mapea la tabla de sistema 
 	set_ss_pag(TPSystem, page_table_user, page_table_user,1); //Mapea la tabla de sistema 
 	set_ss_pag(DirAddress, 0, page_table_system, 0); //Asigna a la primera entrada del directorio la tabla de sistema
-	set_ss_pag(DirAddress, 1, page_table_user, 3); //Asigna a la primera entrada del directorio la tabla de usuario
+	set_ss_pag(DirAddress, 1, page_table_user, 1); //Asigna a la primera entrada del directorio la tabla de usuario
 
 	// Obtener el task_struct de free queue
 	// Alocatar un nuevo task_union
 	int init_union = alloc_frame();
 	union task_union *init_task_union = (union task_union *)  (init_union << 12);
-	
-	INIT_CIRCULAR_BUFFER(buf_circ );
+		
+    int buf = alloc_frame();
+	buf_circ = (struct circular_buffer *) (buf << 12);
+	set_ss_pag(TPSystem, buf, buf, 0); // Mapear el buffer circular en la tabla de páginas del proceso
 
-	set_ss_pag(TPUser, buf_circ, buf_circ, 3); // Mapear el buffer circular en la tabla de páginas de usuario del proceso
-	
+	INIT_CIRCULAR_BUFFER(buf_circ);
+
 	// Mapear PCB en la tabla de páginas de sistema 
 	set_ss_pag(TPSystem, init_union, init_union, 0); 
 	
 	// Asignar PID 1 al proceso
 	init_task_union->task.PID = 1;
+	
+
 
 
 	// Inicializar el campo de la dirección del directorio en el union
@@ -117,10 +121,12 @@ void init_task1(void)
 
 
 
+
 //Preparación de la pila 
 	unsigned long *stack_top = (unsigned long *)&(init_task_union->stack[KERNEL_STACK_SIZE]);
 	// Actualizar el TSS para que apunte a la nueva pila de sistema de la tarea
 	writeMSR(0x175, stack_top);
+	init_task_union->task.k_esp = (unsigned long)stack_top;
 
 	// Hacer que el directorio sea current
 	set_cr3(DirAddress);
@@ -131,7 +137,7 @@ void init_task1(void)
 }
 
 void inner_task_switch(union task_union *new){
-	tss.esp0 = (unsigned long)&(new->stack[KERNEL_STACK_SIZE]);
+	tss.esp0 = (unsigned int)&(new->stack[KERNEL_STACK_SIZE]);
 	set_cr3(new->task.dir_pages_baseAddr);
 
 

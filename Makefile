@@ -36,6 +36,7 @@ SYSOBJ = \
 	circular_buffer.o \
 	msr.o \
 	hardware.o \
+	semaforo.o
 
 LIBZEOS = -L . -l zeos
 

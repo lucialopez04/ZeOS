@@ -14,6 +14,8 @@
 #include <sched.h>
 #include <system.h>
 #include <errno.h>
+#include <semaforo.h>
+#include <interrupt.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -67,13 +69,14 @@ int sys_write(int fd, char * buffer, int size) {
 extern struct circular_buffer *buf_circ;
 int sys_read(char *b, int maxchars){
   if (access_ok(VERIFY_WRITE, b, maxchars) != 1) return -14; /*EFAULT*/
-
   int leidas = 0;
   char c;
-  while (leidas < maxchars && (c = CIRCULAR_BUFFER_READ(buf_circ)) != '\0') {
+while(leidas < maxchars) {
+    c = CIRCULAR_BUFFER_READ(buf_circ);
     b[leidas] = c;
     leidas++;
   }
+
   return leidas;
 }
 
@@ -91,6 +94,10 @@ int sys_fork(void) {
 
   //2. copia el task union del padre al hijo usando copy_data
   union task_union *padre = current();
+  page_table_entry *sys_pt = (page_table_entry *)(padre->task.dir_pages_baseAddr[0].bits.pbase_addr << 12);
+  set_ss_pag(sys_pt, t_st, t_st, 0); //Mapeo temporal del task_union del hijo en el espacio del padre para poder usar copy_data
+    set_cr3(get_DIR(padre));
+
   copy_data(padre, t_TU, sizeof(union task_union));
 
   //TS_child es un puntero a la @virtual del task_struct del proceso hijo
@@ -121,9 +128,6 @@ int sys_fork(void) {
   //Asigna direcciones lógicas en el directorio del hijo
   set_ss_pag(get_DIR(TS_child), 1, PT_usC, 1);
   
-  //obtienes el directorio del proceso padre
-  //obtienes la dirección física de sistema
-  page_table_entry *sys_pt = get_PT(&padre->task);
 
   //guarda direcciones en PT del sistema (transformandolas de fisicas a logicas)
   //set_ss_pag(sys_pt, Directorio, Directorio, 0);
@@ -169,7 +173,6 @@ int sys_fork(void) {
   for (int i = 0; i < NUM_PAG_DATA; i++) {
     set_ss_pag(pt_user_padre, tmp_page+i, frames_DS[i], 1);
   }
-  set_cr3(get_DIR(padre));
   //4.2. Copia páginas data+stack
   for (int i = 0; i < NUM_PAG_DATA; i++) {
     void *start = (void *) ((PAG_LOG_INIT_DATA+i) << 12);
@@ -254,15 +257,15 @@ void sys_block(void) {
     //un proceso tendremos que poner el proceso actua en la cola blocked (FIFO)
     //y llamar al scheduler para ejecutar un nuevo proceso
     //Si hay alguno pendiente de desbloquear, el proceso no será bloqueado.
-	struct task_struct  *curr = current();
-	if (curr->pending_unblocks == 0) {
+    union task_union *curr = current();
+	if (curr->task.pending_unblocks == 0) {
 		/*struct list_head currH = curr.list;
 		list_add_tail(&(currH), &blocked);*/
 		update_process_state_rr(curr, &blocked);
 		sched_next_rr();
 	}
 	else {
-		curr->pending_unblocks--;
+		curr->task.pending_unblocks--;
 	}
 }
 

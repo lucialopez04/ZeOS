@@ -4,7 +4,7 @@
 #define CIRCULAR_BUFFER_SIZE 4
 
 struct circular_buffer {
-	char *buffer;
+	char buffer[CIRCULAR_BUFFER_SIZE];
 	int head; // índex del següent byte a escriure
 	int tail; // índex del següent byte a llegir
     int full; // indicador de si el buffer està ple
