@@ -109,7 +109,8 @@ void init_task1(void)
 
 	// Mapear PCB en la tabla de páginas de sistema 
 	set_ss_pag(TPSystem, init_union, init_union, 0); 
-	
+	INIT_LIST_HEAD(&(init_task_union->task.childs)); // Inicializar la lista de hijos
+	INIT_LIST_HEAD(&(init_task_union->task.anchor_child)); // Inicializar la lista de hermanos
 	// Asignar PID 1 al proceso
 	init_task_union->task.PID = 1;
 	

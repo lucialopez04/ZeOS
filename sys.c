@@ -46,6 +46,8 @@ int sys_write(int fd, char * buffer, int size) {
   if (ch_fd != 0) return ch_fd;
   else if (access_ok(VERIFY_WRITE, buffer, size) != 1) return -14; /*EFAULT*/
   else if (buffer == NULL) return -22; /*EINVAL*/
+  else if (size < 0) return -22; /*EINVAL*/
+  else if (size > 1024) return -22; /*EINVAL*/
   copy_from_user(buffer, buffer_sistema, size);
   int size_cons = sys_write_console(buffer_sistema, size);
   return size_cons;
@@ -89,14 +91,29 @@ int sys_fork(void) {
   //1. Obtener un task_struct, si no hay espacio para ningun proceso, retorna error.
   int t_st = alloc_frame();
   if (t_st == -1) return -ENOMEM;
-  //t_TU es un puntero a la @virtual del task_union del proceso hijo
-  union task_union *t_TU = (union task_union*)(t_st << 12);
+
 
   //2. copia el task union del padre al hijo usando copy_data
   union task_union *padre = current();
   page_table_entry *sys_pt = (page_table_entry *)(padre->task.dir_pages_baseAddr[0].bits.pbase_addr << 12);
-  set_ss_pag(sys_pt, t_st, t_st, 0); //Mapeo temporal del task_union del hijo en el espacio del padre para poder usar copy_data
-    set_cr3(get_DIR(padre));
+  
+  int logical_kernel_page = -1;
+  for(int i = 0; i < TOTAL_PAGES_LOG; i++) {
+    if (sys_pt[i].bits.present == 0) {
+      logical_kernel_page = i;
+      break;
+    }
+  }
+  if(logical_kernel_page == -1) {
+    free_frame(t_st);
+    return -ENOMEM;
+  }
+
+  set_ss_pag(sys_pt, logical_kernel_page, t_st, 0); //Mapeo temporal del task_union del hijo en el espacio del padre para poder usar copy_data
+  set_cr3(get_DIR(padre));
+    //t_TU es un puntero a la @virtual del task_union del proceso hijo
+  union task_union *t_TU = (union task_union*)(logical_kernel_page << 12);
+
 
   copy_data(padre, t_TU, sizeof(union task_union));
 
@@ -109,20 +126,56 @@ int sys_fork(void) {
   int Directorio = alloc_frame();
   if (Directorio == -1) {
     free_frame(t_st);
-    return ENOMEM;
+    return -ENOMEM;
   }
-  page_table_entry *DirDircc = (page_table_entry *)(Directorio << 12);
-  clear_page_table(DirDircc);
-  TS_child->dir_pages_baseAddr = DirDircc;
+
+  int logical_dir_page = -1;
+  for(int i = 0; i < TOTAL_PAGES_LOG; i++) {
+    if (sys_pt[i].bits.present == 0) {
+      logical_dir_page = i;
+      break;
+    }
+  }
+  if(logical_dir_page == -1) {(t_st);
+    free_frame(Directorio);
+    return -ENOMEM;
+  }
+  set_ss_pag(sys_pt, logical_dir_page, Directorio, 0); //Mapeo temporal del directorio del hijo en el espacio del padre para poder usarlo
+  set_cr3(get_DIR(padre));
+
+
+  page_table_entry *DirDicc = (page_table_entry *)(logical_dir_page << 12);
+  clear_page_table(DirDicc);
+  TS_child->dir_pages_baseAddr = DirDicc;
   TS_child->dir_pages_baseAddr[0] = current()->task.dir_pages_baseAddr[0];  
 
   int PT_usC = alloc_frame();
   if (PT_usC == -1) {
     free_frame(t_st);
     free_frame(Directorio);
+    del_ss_pag(sys_pt, logical_dir_page);
+    del_ss_pag(sys_pt, logical_kernel_page);
     return -ENOMEM;
   }
-  page_table_entry *TP_hijoU = (page_table_entry *)(PT_usC << 12);
+  int logical_pt_page = -1;
+  for(int i = 0; i < TOTAL_PAGES_LOG; i++) {
+    if (sys_pt[i].bits.present == 0) {
+      logical_pt_page = i;
+      break; 
+    }
+  }
+  if(logical_pt_page == -1) {
+    free_frame(t_st);
+    free_frame(Directorio);
+    free_frame(PT_usC);
+    del_ss_pag(sys_pt, logical_dir_page);
+    del_ss_pag(sys_pt, logical_kernel_page);
+    return -ENOMEM;
+  }
+  set_ss_pag(sys_pt, logical_pt_page, PT_usC, 0); //
+  set_cr3(get_DIR(padre));
+  
+  page_table_entry *TP_hijoU = (page_table_entry *)(logical_pt_page << 12);
   clear_page_table(TP_hijoU);
 
   //Asigna direcciones lógicas en el directorio del hijo
@@ -162,17 +215,19 @@ int sys_fork(void) {
   }
    //3.4. Mapear estos frames a sus direcciones lógicas en la TP del hijo
   for (int i = 0; i < NUM_PAG_DATA; i++) {
-    set_ss_pag(TP_hijoU, i, frames_DS[i], 1);
+    set_ss_pag(TP_hijoU, PAG_LOG_INIT_DATA+i, frames_DS[i], 1);
   }
   //4. heredar el user data, las páginas de data+stack del padre deben ser copiadas
   //proceso hijo, por ende deben ser mapeadas temporalmente en espacio disponible
   //de la pila del padre 
   //4.1. Usa entradas temporales libres en la TP del padre (set_ss_pag, del_ss_pag)
   //CHECKPOINT!!!
-  int tmp_page = PAG_LOG_INIT_CODE+NUM_PAG_CODE;
+  int tmp_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA;
   for (int i = 0; i < NUM_PAG_DATA; i++) {
     set_ss_pag(pt_user_padre, tmp_page+i, frames_DS[i], 1);
   }
+
+  set_cr3(get_DIR(padre)); //flush de TLB para que el proceso padre vea los cambios en su TP
   //4.2. Copia páginas data+stack
   for (int i = 0; i < NUM_PAG_DATA; i++) {
     void *start = (void *) ((PAG_LOG_INIT_DATA+i) << 12);
@@ -223,6 +278,10 @@ int sys_fork(void) {
   list_add_tail(&(TS_child->list), &ready_queue);
   TS_child->state = ST_READY;
 
+  del_ss_pag(sys_pt, logical_dir_page);
+  del_ss_pag(sys_pt, logical_kernel_page);
+  del_ss_pag(sys_pt, logical_pt_page);
+  set_cr3(get_DIR(padre));
   //7. retorna PID del proceso hijo
   return TS_child->PID;  
 }
@@ -232,15 +291,20 @@ void sys_exit(void) {
   //(memoria física, task_struct y así). Usa free_frame para las páginas físicas
   struct task_struct *curr = current();
   page_table_entry *pt_curr = get_DIR(curr);
-  int pt_curr_copy = pt_curr[1].bits.pbase_addr;
-  page_table_entry *pt_user_curr = (page_table_entry *) (pt_curr_copy >> 12);
+
+  int frame_pt_user = pt_curr[1].bits.pbase_addr;
+  page_table_entry *pt_user_curr = (page_table_entry *) (frame_pt_user << 12);
   free_user_pages(pt_user_curr);
   //liberar tabla de usuario
-  free_frame(pt_user_curr[1].bits.pbase_addr);
+  free_frame(frame_pt_user);
   //directorio y estructuras de sistema y de usuario
-  free_frame(get_frame(pt_curr,0));
-  int frame_curr = ((unsigned long)curr) >> 12;
-  free_frame(frame_curr);
+  free_frame(((unsigned long)pt_curr) >> 12);
+
+  int logical_page = ((unsigned long)curr) >> 12;
+  page_table_entry *sys_pt = (page_table_entry *)(pt_curr[0].bits.pbase_addr << 12);
+  //int physical_frame = get_frame(sys_pt, logical_page);
+  //free_frame(physical_frame);
+  //del_ss_pag(sys_pt, logical_page);
 
   //1.5 Quita el proceso de la lista del padre, mueve cualquier child vivo de 
   //proceso current a proceso idle (heredará a los niños) y actualiza la info
@@ -277,23 +341,22 @@ int sys_unblock(int pid) {
 	//de otra manera, retorna -1
   struct task_struct *curr = &current()->task;
   struct list_head *pos;
-  struct list_head *child = NULL;
+  struct task_struct *child_task = NULL;
   //mira en la lista de hijos del proceso padre si hay alguien con PID == pid
   list_for_each(pos, &curr->childs) {
     struct task_struct *chosen = list_head_to_task_struct(pos);
     if (chosen->PID == pid) {
-      child = chosen;
+      child_task = chosen;
       break;
     }
   }
 
 
-  if (child == NULL) return -1;
+  if (child_task  == NULL) return -1;
   //si proceso está bloqueado
 
-  struct task_struct *child_task =  list_head_to_task_struct(child);
   if (child_task->state == ST_BLOCKED) {
-    update_process_state_rr(child, &ready_queue);
+    update_process_state_rr(&child_task->anchor_child, &ready_queue);
   }
   else {
     curr->pending_unblocks++;

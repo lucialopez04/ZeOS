@@ -1,38 +1,59 @@
 #include <libc.h>
 #include <wrappers.h>
-char *buff;
+char *buff; 
+// char buffer_procesos[1024 * 40];  
 
 int pid;
 
 int __attribute__ ((__section__(".text.main")))
   main(void)
-{
-    /* Next line, tries to move value 0 to CR3 register. This register is a privileged one, and so it will raise an exception */
-     /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
-
+{ 
   
-  write(1, "\nJuego de pruebas\n", strlen("\nJuego de pruebas\n")); 
+  write(1, "\nTest de expansion de memoria (de 1024 a 2048 marcos fisicos)\n", strlen("\nTest de expansion de memoria (de 1024 a 2048 marcos fisicos)\n")); 
+  write(1, "\nNOTA: En mm_address.h se ha canviado NUM_PAG_DATA para que ocupe 120 frames\n", strlen("\nNOTA: En mm_address.h se ha canviado NUM_PAG_DATA para que ocupe 120 frames\n")); 
+  
+    char buff2[16];
+    itoa(gettime(), buff2);
+    write(1, "Tiempo de inicio:", strlen("Tiempo de inicio:"));
+    write(1, buff2, strlen(buff2));
+    write(1, "\n", strlen("\n"));
+    
+          int counter = 0;
+          char msg[64];
 
-  while(1) { 
-    write(1, "\n Lo que escribas se guardará en el buffer circular!\n", strlen("\n Lo que escribas se guardará en el buffer circular!\n"));
+          for(int i = 0; i < 10; ++i) {
+              int pid = fork();
+            if(pid == 0) {
+              while(1); // el hijo se queda aqui
+            }
+            else if(pid > 0){
+              counter++;
+              itoa(pid, msg);
+              write(1, "Hijo creado con PID: ", strlen("Hijo creado con PID: "));
+              write(1, msg, strlen(msg));
+               write(1, "\n", strlen("\n"));
 
-    for(int i = 0; i < 99999991; ++i);
+            }
+            else{
+              write(1, "Error creating process\n", strlen("Error creating process\n"));
+              break;
+            }
+            for(int i = 0; i < 9999999; ++i);
+          }
+            write(1, "Prueba acabada, total procesos creados: ", strlen("Prueba acabada, total procesos creados: "));
+            itoa(counter, msg);
+            write(1, msg, strlen(msg));
+              write(1, "\n", strlen("\n"));
+            
+            if (counter == 10) {
+              write(1, "Test superado!\n", strlen("Test superado!\n"));
+            }
+            else {
+              write(1, "Test no superado :(\n", strlen("Test no superado :(\n"));
+            }
 
-    write(1, "\n Los ultimos 4 caracteres que has escrito son:\n", strlen("\n Los ultimos 4 caracteres que has escrito son:\n"));
+            for(int i = 0; i < 1000000; ++i);
+      
+            while(1); // el padre se queda aqui
 
-    char buff3[5];
-    int caracteres = read(buff3, 4);
-    if(caracteres < 4) {
-      write(1, "\n No has escrito 4 caracteres, se mostrarán los que hayas escrito\n", strlen("\n No has escrito 4 caracteres, se mostrarán los que hayas escrito\n"));
-      write(1, buff3, strlen(buff3));
-
-    }
-    else{
-          write(1, buff3, strlen(buff3));
-
-    }
-
-    for(int i = 0; i < 1000000; ++i);
-
-  }
 }
